@@ -17,12 +17,11 @@ class AuditLogMiddleware(MiddlewareMixin):
             else:
                 ip = request.META.get('REMOTE_ADDR')
             
-            # Temporarily comment out user tracking until Phase 5 is active
-            # user = request.user if request.user.is_authenticated else None
+            user = request.user if request.user.is_authenticated else None
             
             # Fire and forget Audit log creation (synchronous for now, could be pushed to Celery later)
             AuditLog.objects.create(
-                # user=user,
+                user=user,
                 ip_address=ip,
                 method=request.method,
                 path=request.path,

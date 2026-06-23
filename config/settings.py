@@ -15,9 +15,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+SECRET_KEY = os.environ['SECRET_KEY']
+DEBUG = os.environ['DEBUG'] == 'True'
+ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -33,12 +33,13 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'corsheaders',
     'django_filters',
+    'django.contrib.gis',
 
     # Local apps
     'apps.common',
     'apps.storage',
     'apps.security',
-    # 'apps.users',
+    'apps.users',
     # 'apps.venues',
     # 'apps.events',
 ]
@@ -78,12 +79,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'nightlife_db'),
-        'USER': os.getenv('DB_USER', 'nightlife_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'nightlife_pass'),
-        'HOST': os.getenv('DB_HOST', 'db'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': os.environ['DB_NAME'],
+        'USER': os.environ['DB_USER'],
+        'PASSWORD': os.environ['DB_PASSWORD'],
+        'HOST': os.environ['DB_HOST'],
+        'PORT': os.environ['DB_PORT'],
     }
 }
 
@@ -91,7 +92,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/1"),
+        "LOCATION": os.environ['REDIS_URL'],
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -144,8 +145,8 @@ REST_FRAMEWORK = {
     'ALLOWED_VERSIONS': ['1.0'],
     'VERSION_PARAM': 'version',
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        # JWT config will be added here
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny', # Update securely later
@@ -166,6 +167,9 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API documentation for NightLife platform',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'persistAuthorization': True,
+    },
 }
 
 # CORS
@@ -175,4 +179,26 @@ CORS_ALLOW_ALL_ORIGINS = True # Change to False in production and set CORS_ALLOW
 MAX_IMAGE_SIZE_MB = 5
 MAX_VIDEO_SIZE_MB = 50
 MAX_DOCUMENT_SIZE_MB = 10
+
+# Authentication
+AUTH_USER_MODEL = 'users.User'
+
+# Email backend for development
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ['EMAIL_HOST']
+EMAIL_PORT = int(os.environ['EMAIL_PORT'])
+EMAIL_USE_TLS = os.environ['EMAIL_USE_TLS'] == 'True'
+EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
