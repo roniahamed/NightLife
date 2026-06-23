@@ -1,0 +1,64 @@
+old_path,new_path
+all ui-ux images/Login Version 8.png,all ui-ux images/auth/login_user.png
+all ui-ux images/Login Version 9.png,all ui-ux images/onboarding/onboarding_discover_nightlife_near_you.png
+all ui-ux images/Login Version 10.png,all ui-ux images/onboarding/onboarding_follow_the_heat.png
+all ui-ux images/Login Version 11.png,all ui-ux images/onboarding/onboarding_events_and_tickets.png
+all ui-ux images/Login Version 12.png,all ui-ux images/onboarding/onboarding_real_nightlife_stories.png
+all ui-ux images/Login Version 13.png,all ui-ux images/permissions/permission_enable_location.png
+all ui-ux images/Login Version 14.png,all ui-ux images/permissions/permission_enable_notifications.png
+all ui-ux images/Login Version 15.png,all ui-ux images/onboarding/onboarding_choose_vibe_empty.png
+all ui-ux images/Login Version 16.png,all ui-ux images/onboarding/onboarding_choose_vibe_selected.png
+all ui-ux images/Login Version 17.png,all ui-ux images/onboarding/splash_lively_logo.png
+all ui-ux images/Login Version 18.png,all ui-ux images/user/feed/home_feed_post_detail.png
+all ui-ux images/Login Version 19.png,all ui-ux images/user/heatmap/heatmap_live_now_map.png
+all ui-ux images/Login Version 20.png,all ui-ux images/user/discover/discover_clubs_list.png
+all ui-ux images/Login Version 21.png,all ui-ux images/user/events/events_upcoming_list.png
+all ui-ux images/Login Version 23.png,all ui-ux images/user/messages/messages_inbox.png
+all ui-ux images/Login Version 24.png,all ui-ux images/user/messages/message_chat_detail.png
+all ui-ux images/Login Version 27.png,all ui-ux images/venue/venue_profile_about_follow.png
+all ui-ux images/Login Version 28.png,all ui-ux images/venue/venue_profile_events_unfollow.png
+all ui-ux images/Login Version 29.png,all ui-ux images/venue/venue_profile_gallery_follow.png
+all ui-ux images/Login Version 30.png,all ui-ux images/venue/venue_profile_reviews_follow.png
+all ui-ux images/Login Version 31.png,all ui-ux images/ticketing/event_detail_rsvp_state.png
+all ui-ux images/Login Version 32.png,all ui-ux images/ticketing/event_detail_going_state.png
+all ui-ux images/Login Version 33.png,all ui-ux images/ticketing/ticket_purchase_quantity_sheet.png
+all ui-ux images/Login Version 34.png,all ui-ux images/ticketing/ticket_purchase_confirmed_sheet.png
+all ui-ux images/Login Version 35.png,all ui-ux images/user/profile/profile_gallery_tab.png
+all ui-ux images/Login Version 36.png,all ui-ux images/user/profile/profile_posts_tab.png
+all ui-ux images/Login Version 37.png,all ui-ux images/user/profile/profile_saved_events_tab.png
+all ui-ux images/Login Version 38.png,all ui-ux images/user/profile/profile_followers_list.png
+all ui-ux images/Login Version 39.png,all ui-ux images/user/profile/profile_following_list.png
+all ui-ux images/Login Version 40.png,all ui-ux images/user/profile/profile_gallery_tab_follow_state.png
+all ui-ux images/Login Version 41.png,all ui-ux images/club/dashboard/club_dashboard_events.png
+all ui-ux images/Login Version 42.png,all ui-ux images/user/profile/profile_saved_events_tab_unfollow_state.png
+all ui-ux images/Login Version 43.png,all ui-ux images/user/profile/profile_followers_list_alt.png
+all ui-ux images/Login Version 44.png,all ui-ux images/user/profile/profile_following_list_alt.png
+all ui-ux images/Login Version 45.png,all ui-ux images/user/heatmap/heatmap_activity_bottom_sheet_feed.png
+all ui-ux images/Login Version 46.png,all ui-ux images/user/profile/profile_edit_mode.png
+all ui-ux images/Login Version 47.png,all ui-ux images/club/dashboard/club_dashboard_overview.png
+all ui-ux images/Login Version 48.png,all ui-ux images/club/dashboard/club_dashboard_analytics.png
+all ui-ux images/Login Version 49.png,all ui-ux images/club/dashboard/club_dashboard_content.png
+all ui-ux images/Login Version 50.png,all ui-ux images/club/event-creation/create_event_step1_basics.png
+all ui-ux images/Login Version 51.png,all ui-ux images/club/event-creation/create_event_step2_genres.png
+all ui-ux images/Login Version 52.png,all ui-ux images/club/event-creation/create_event_step3_tickets_single_tier.png
+all ui-ux images/Login Version 53.png,all ui-ux images/club/event-creation/create_event_step3_tickets_multi_tier.png
+all ui-ux images/Login Version 54.png,all ui-ux images/club/event-creation/create_event_step4_lineup.png
+all ui-ux images/Login Version 55.png,all ui-ux images/club/event-creation/create_event_step5_publish_preview.png
+all ui-ux images/Login Version 56.png,all ui-ux images/create-post/create_post_step2_details_visibility.png
+all ui-ux images/Login Version 57.png,all ui-ux images/settings/settings_notifications.png
+all ui-ux images/Login Version 58.png,all ui-ux images/settings/settings_privacy_and_safety_toggles.png
+all ui-ux images/Login Version 59.png,all ui-ux images/settings/settings_account.png
+all ui-ux images/Login Version 60.png,all ui-ux images/settings/settings_help_and_support.png
+all ui-ux images/Login Version 61.png,all ui-ux images/settings/settings_main.png
+all ui-ux images/Login Version 62.png,all ui-ux images/create-post/create_post_step1_write_caption.png
+all ui-ux images/Login Version 63.png,all ui-ux images/create-post/create_post_step3_publish_preview.png
+all ui-ux images/Login Version 64.png,all ui-ux images/user/notifications/notifications_list.png
+all ui-ux images/Login Version 65.png,all ui-ux images/user/messages/messages_inbox_alt.png
+all ui-ux images/Login Version 66.png,all ui-ux images/user/messages/message_chat_detail_alt.png
+all ui-ux images/Sign Up Version 8.png,all ui-ux images/auth/signup_register.png
+all ui-ux images/Sign Up Version 9.png,all ui-ux images/auth/signup_otp_verify.png
+all ui-ux images/Sign Up Version 10.png,all ui-ux images/auth/signup_otp_error.png
+feature images/users/Login Version 8.png,feature images/users/auth/login_user.png
+feature images/users/Sign Up Version 8.png,feature images/users/auth/signup_register.png
+feature images/users/Sign Up Version 9.png,feature images/users/auth/signup_otp_verify.png
+feature images/users/Sign Up Version 10.png,feature images/users/auth/signup_otp_error.png
