@@ -1,3 +1,5 @@
+build only backend apis, don't need frontend for now.
+
 1. Project Setup
 Initialize Project
 Configure Environment
@@ -142,3 +144,30 @@ Unit Tests
 Integration Tests
 API Tests
 Load Tests
+
+
+
+
+For every implementation:
+
+- Build production-ready code.
+- Use reusable components.
+- Use TypeScript.
+- Use Tailwind CSS.
+- Use Shadcn UI.
+- Follow the established Design System.
+- Maintain responsiveness.
+- Maintain accessibility.
+- Optimize performance.
+- Avoid placeholder implementations.
+- don't write unnessery comment and text. 
+
+
+Follow this workflow:
+
+1. Read the Product Specification completely.
+2. Read the Frontend Development Roadmap.
+3. Build only the requested phase.
+4. Never implement future phases unless explicitly instructed.
+5. Reuse previously created components.
+6. Keep the codebase production-ready and scalable.
