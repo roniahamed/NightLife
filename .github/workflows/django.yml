@@ -1,0 +1,68 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: nightlife_db
+          POSTGRES_USER: nightlife_user
+          POSTGRES_PASSWORD: nightlife_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run migrations
+      env:
+        DB_NAME: nightlife_db
+        DB_USER: nightlife_user
+        DB_PASSWORD: nightlife_pass
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
+        REDIS_URL: redis://127.0.0.1:6379/1
+        SECRET_KEY: dummy-key-for-tests
+      run: |
+        python manage.py migrate
+        
+    - name: Run tests
+      env:
+        DB_NAME: nightlife_db
+        DB_USER: nightlife_user
+        DB_PASSWORD: nightlife_pass
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
+        REDIS_URL: redis://127.0.0.1:6379/1
+        SECRET_KEY: dummy-key-for-tests
+      run: |
+        python manage.py test
