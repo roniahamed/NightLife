@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.gis.geos import Point
+from .models import UserFollow, UserBlock, UserReport, UserSettings
 
 User = get_user_model()
 
@@ -76,11 +77,19 @@ class ProfileSerializer(serializers.ModelSerializer):
     longitude = serializers.FloatField(write_only=True, required=False)
     lat = serializers.SerializerMethodField()
     lng = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'latitude', 'longitude', 'lat', 'lng')
-        read_only_fields = ('id', 'email')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng')
+        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count')
+
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    def get_following_count(self, obj):
+        return obj.following.count()
 
     def get_lat(self, obj):
         if obj.location:
@@ -104,3 +113,80 @@ class ProfileSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+class UserPublicProfileSerializer(serializers.ModelSerializer):
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+    lat = serializers.SerializerMethodField()
+    lng = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng')
+
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    def get_following_count(self, obj):
+        return obj.following.count()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return UserFollow.objects.filter(follower=request.user, following=obj).exists()
+        return False
+
+    def get_lat(self, obj):
+        if obj.location:
+            return obj.location.y
+        return None
+
+    def get_lng(self, obj):
+        if obj.location:
+            return obj.location.x
+        return None
+
+class UserFollowerSerializer(serializers.ModelSerializer):
+    follower_id = serializers.UUIDField(source='follower.id')
+    follower_username = serializers.CharField(source='follower.username')
+    follower_first_name = serializers.CharField(source='follower.first_name')
+    follower_last_name = serializers.CharField(source='follower.last_name')
+    follower_profile_image = serializers.ImageField(source='follower.profile_image', read_only=True)
+
+    class Meta:
+        model = UserFollow
+        fields = ('follower_id', 'follower_username', 'follower_first_name', 'follower_last_name', 'follower_profile_image', 'created_at')
+
+class UserFollowingSerializer(serializers.ModelSerializer):
+    following_id = serializers.UUIDField(source='following.id')
+    following_username = serializers.CharField(source='following.username')
+    following_first_name = serializers.CharField(source='following.first_name')
+    following_last_name = serializers.CharField(source='following.last_name')
+    following_profile_image = serializers.ImageField(source='following.profile_image', read_only=True)
+
+    class Meta:
+        model = UserFollow
+        fields = ('following_id', 'following_username', 'following_first_name', 'following_last_name', 'following_profile_image', 'created_at')
+
+class UserBlockedSerializer(serializers.ModelSerializer):
+    blocked_id = serializers.UUIDField(source='blocked.id')
+    blocked_username = serializers.CharField(source='blocked.username')
+    blocked_first_name = serializers.CharField(source='blocked.first_name')
+    blocked_last_name = serializers.CharField(source='blocked.last_name')
+    blocked_profile_image = serializers.ImageField(source='blocked.profile_image', read_only=True)
+
+    class Meta:
+        model = UserBlock
+        fields = ('blocked_id', 'blocked_username', 'blocked_first_name', 'blocked_last_name', 'blocked_profile_image', 'created_at')
+
+class UserReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserReport
+        fields = ('id', 'reported_user', 'reason', 'description', 'created_at')
+        read_only_fields = ('id', 'created_at', 'reported_user')
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSettings
+        exclude = ('id', 'user')

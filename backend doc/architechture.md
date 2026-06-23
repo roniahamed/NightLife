@@ -1,6 +1,5 @@
 Using modular monolotic feature based architecture and scalable with next level architecture decision on the django framework. 
 
-
 NightLife/
 ├── config/
 │   ├── settings.py
@@ -10,9 +9,11 @@ NightLife/
 │
 ├── apps/
 │   ├── urls.py
+│
 │   ├── users/
 │   │   ├── models.py
 │   │   ├── serializers.py
+│   │   ├── services.py
 │   │   ├── views.py
 │   │   ├── urls.py
 │   │   ├── permissions.py
@@ -21,6 +22,7 @@ NightLife/
 │   ├── venues/
 │   │   ├── models.py
 │   │   ├── serializers.py
+│   │   ├── services.py
 │   │   ├── views.py
 │   │   ├── urls.py
 │   │   └── tests.py
@@ -28,6 +30,7 @@ NightLife/
 │   ├── events/
 │   │   ├── models.py
 │   │   ├── serializers.py
+│   │   ├── services.py
 │   │   ├── views.py
 │   │   ├── urls.py
 │   │   └── tests.py
@@ -35,6 +38,7 @@ NightLife/
 │   ├── tickets/
 │   │   ├── models.py
 │   │   ├── serializers.py
+│   │   ├── services.py
 │   │   ├── views.py
 │   │   ├── urls.py
 │   │   └── tests.py
@@ -42,6 +46,7 @@ NightLife/
 │   ├── nightlife/
 │   │   ├── models.py
 │   │   ├── serializers.py
+│   │   ├── services.py
 │   │   ├── views.py
 │   │   ├── urls.py
 │   │   └── tests.py
