@@ -30,7 +30,7 @@ urlpatterns = [
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
     # App URLs
-    path('api/storage/', include('apps.storage.urls')),
+    path('api/', include('apps.urls')),
 ]
 
 if settings.DEBUG:
