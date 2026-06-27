@@ -23,3 +23,26 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return request.user and request.user.is_staff
+
+class IsActiveProfileUser(permissions.BasePermission):
+    """
+    Allows access only to authenticated users whose active profile is 'user'.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        # Default to checking registration_type if token doesn't have active_profile claim
+        active_profile = request.auth.payload.get('active_profile') if hasattr(request, 'auth') and request.auth else request.user.registration_type
+        return active_profile == 'user'
+
+class IsActiveProfileVenue(permissions.BasePermission):
+    """
+    Allows access only to authenticated users whose active profile is 'venue'.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        active_profile = request.auth.payload.get('active_profile') if hasattr(request, 'auth') and request.auth else request.user.registration_type
+        return active_profile == 'venue'

@@ -138,3 +138,16 @@ class UserModuleTests(APITestCase):
         self.user1.settings.refresh_from_db()
         self.assertFalse(self.user1.settings.is_activity_status_visible)
         self.assertTrue(self.user1.settings.notify_sms)
+
+    def test_switch_profile(self):
+        # Create venue profile for user1
+        self.user1.registration_type = 'venue'
+        self.user1.save()
+        from apps.venues.models import Venue
+        Venue.objects.create(owner=self.user1, name='My Club', is_approved=True)
+
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.post(reverse('switch-profile'), {'profile': 'venue'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['data']['active_profile'], 'venue')
+        self.assertIn('access', response.data['data'])

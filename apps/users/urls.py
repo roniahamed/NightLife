@@ -4,7 +4,8 @@ from .views import (
     RegisterView, VerifyOTPView, ResendOTPView, ForgotPasswordView, 
     VerifyResetOTPView, ResetPasswordView, ChangePasswordView, ProfileView,
     PublicProfileView, FollowUserView, FollowersListView, FollowingListView,
-    BlockUserView, ReportUserView, BlockedUsersListView, UserSettingsView
+    BlockUserView, ReportUserView, BlockedUsersListView, UserSettingsView,
+    CustomTokenObtainPairView, SwitchProfileView
 )
 
 urlpatterns = [
@@ -14,8 +15,9 @@ urlpatterns = [
     path('resend-otp/', ResendOTPView.as_view(), name='resend-otp'),
     
     # Standard JWT Login
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('switch-profile/', SwitchProfileView.as_view(), name='switch-profile'),
     
     # Password Management
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),

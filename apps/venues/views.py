@@ -48,9 +48,10 @@ class VenueViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        if self.request.user.role != 'venue':
+        active_profile = self.request.auth.payload.get('active_profile') if hasattr(self.request, 'auth') and self.request.auth else self.request.user.registration_type
+        if active_profile != 'venue':
             from rest_framework.exceptions import ValidationError
-            raise ValidationError("Only venue accounts can create a venue profile.")
+            raise ValidationError("You must switch to your venue profile to create a venue.")
         
         if hasattr(self.request.user, 'venue_profile'):
             from rest_framework.exceptions import ValidationError

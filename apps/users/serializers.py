@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.gis.geos import Point
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import UserFollow, UserBlock, UserReport, UserSettings
 
 User = get_user_model()
@@ -12,7 +13,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password', 'role')
+        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password', 'registration_type')
         
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -30,7 +31,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             dob=validated_data.get('dob'),
-            role=validated_data.get('role', 'regular'),
+            registration_type=validated_data.get('registration_type', 'user'),
+            is_user_profile_active=validated_data.get('registration_type', 'user') == 'user',
             is_active=False, # Inactive until OTP is verified
             is_email_verified=False
         )
@@ -83,8 +85,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'role')
-        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count', 'role')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
+        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
 
     def get_followers_count(self, obj):
         return obj.followers.count()
@@ -124,7 +126,7 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng', 'role')
+        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng', 'registration_type')
 
     def get_followers_count(self, obj):
         return obj.followers.count()
@@ -191,3 +193,10 @@ class UserSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSettings
         exclude = ('id', 'user')
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['active_profile'] = user.registration_type
+        return token

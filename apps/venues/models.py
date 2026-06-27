@@ -44,6 +44,7 @@ class Venue(models.Model):
     website = models.URLField(blank=True)
     
     # Missing UI Fields
+    is_approved = models.BooleanField(default=False)
     profile_image = models.ImageField(upload_to='venues/profiles/', null=True, blank=True)
     cover_image = models.ImageField(upload_to='venues/covers/', null=True, blank=True)
     

@@ -12,11 +12,12 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, blank=False, null=False)
     is_email_verified = models.BooleanField(default=False)
     
-    ROLE_CHOICES = (
-        ('regular', 'Regular User'),
+    REGISTRATION_CHOICES = (
+        ('user', 'Regular User'),
         ('venue', 'Venue Account')
     )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='regular')
+    registration_type = models.CharField(max_length=20, choices=REGISTRATION_CHOICES, default='user')
+    is_user_profile_active = models.BooleanField(default=True)
     
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)

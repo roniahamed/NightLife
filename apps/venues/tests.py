@@ -13,7 +13,7 @@ class VenueTests(APITestCase):
             email='testuser@example.com',
             password='testpassword123',
             username='testuser',
-            role='venue'
+            registration_type='venue'
         )
         self.client.force_authenticate(user=self.user)
         

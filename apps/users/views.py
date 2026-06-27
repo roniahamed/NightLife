@@ -15,15 +15,17 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import UserOTP, UserFollow, UserBlock, UserReport
 from .serializers import (
     RegisterSerializer, VerifyOTPSerializer, ResendOTPSerializer, ForgotPasswordSerializer,
     VerifyResetOTPSerializer, ResetPasswordSerializer, ChangePasswordSerializer, ProfileSerializer,
     UserPublicProfileSerializer, UserFollowerSerializer, UserFollowingSerializer, UserReportSerializer,
-    UserBlockedSerializer, UserSettingsSerializer
+    UserBlockedSerializer, UserSettingsSerializer, CustomTokenObtainPairSerializer
 )
 from apps.common.pagination import StandardResultsSetPagination
+from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
 from drf_spectacular.utils import extend_schema
 
@@ -69,6 +71,43 @@ class RegisterView(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED
             )
         return error_response(errors=serializer.errors, message="Registration failed.", status=status.HTTP_400_BAD_REQUEST)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+class SwitchProfileView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    @extend_schema(summary="Switch Profile", description="Switch between 'user' and 'venue' profiles without a password. Returns a new JWT with updated active_profile.", tags=['Authentication'])
+    def post(self, request):
+        target = request.data.get('profile')
+        user = request.user
+        
+        if target not in ['user', 'venue']:
+            return error_response(message="Invalid profile target.", status=status.HTTP_400_BAD_REQUEST)
+            
+        if target == 'venue':
+            if not hasattr(user, 'venue_profile'):
+                return error_response(message="You do not have a venue profile.", status=status.HTTP_403_FORBIDDEN)
+            if not user.venue_profile.is_approved:
+                return error_response(message="Your venue is pending admin approval.", status=status.HTTP_403_FORBIDDEN)
+        
+        if target == 'user':
+            if not user.is_user_profile_active:
+                return error_response(message="Your user profile is inactive. Please activate it first.", status=status.HTTP_403_FORBIDDEN)
+                
+        # Generate new token with new active_profile
+        refresh = RefreshToken.for_user(user)
+        refresh['active_profile'] = target
+        
+        return success_response(
+            data={
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'active_profile': target
+            },
+            message=f"Successfully switched to {target} profile."
+        )
 
 class VerifyOTPView(APIView):
     permission_classes = (AllowAny,)
@@ -255,7 +294,7 @@ class PublicProfileView(generics.RetrieveAPIView):
         return success_response(data=serializer.data)
 
 class FollowUserView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
 
     @extend_schema(summary="Follow/Unfollow User", description="Toggles follow status for the given username.", tags=['Profile'])
     def post(self, request, username):
@@ -278,7 +317,7 @@ class FollowUserView(APIView):
         return success_response(message="Followed successfully.")
 
 class FollowersListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
     serializer_class = UserFollowerSerializer
     pagination_class = StandardResultsSetPagination
 
@@ -298,7 +337,7 @@ class FollowersListView(generics.ListAPIView):
         return success_response(data=serializer.data)
 
 class FollowingListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
     serializer_class = UserFollowingSerializer
     pagination_class = StandardResultsSetPagination
 
@@ -318,7 +357,7 @@ class FollowingListView(generics.ListAPIView):
         return success_response(data=serializer.data)
 
 class BlockUserView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
 
     @extend_schema(summary="Block/Unblock User", description="Toggles block status for the given username.", tags=['Profile'])
     def post(self, request, username):
@@ -340,7 +379,7 @@ class BlockUserView(APIView):
         return success_response(message="Blocked successfully.")
 
 class ReportUserView(generics.CreateAPIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
     serializer_class = UserReportSerializer
 
     @extend_schema(summary="Report User", description="Reports a user.", tags=['Profile'])
@@ -357,7 +396,7 @@ class ReportUserView(generics.CreateAPIView):
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class BlockedUsersListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsActiveProfileUser)
     serializer_class = UserBlockedSerializer
     pagination_class = StandardResultsSetPagination
 
