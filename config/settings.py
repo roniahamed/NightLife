@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'apps.storage',
     'apps.security',
     'apps.users',
-    # 'apps.venues',
+    'apps.venues',
     # 'apps.events',
 ]
 

@@ -12,7 +12,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password')
+        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password', 'role')
         
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -30,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             dob=validated_data.get('dob'),
+            role=validated_data.get('role', 'regular'),
             is_active=False, # Inactive until OTP is verified
             is_email_verified=False
         )
@@ -82,8 +83,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng')
-        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'role')
+        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count', 'role')
 
     def get_followers_count(self, obj):
         return obj.followers.count()
@@ -123,7 +124,7 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng')
+        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng', 'role')
 
     def get_followers_count(self, obj):
         return obj.followers.count()
