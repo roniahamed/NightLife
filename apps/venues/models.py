@@ -60,6 +60,11 @@ class Venue(models.Model):
 
     amenities = models.ManyToManyField(Amenity, related_name='venues', blank=True)
     is_active = models.BooleanField(default=True)
+    
+    # Stripe Connect
+    stripe_account_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_account_status = models.CharField(max_length=50, default='pending')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

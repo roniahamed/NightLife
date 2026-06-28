@@ -18,6 +18,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+            
+        registration_type = attrs.get('registration_type', 'user')
+        if registration_type == 'user' and not attrs.get('dob'):
+            raise serializers.ValidationError({"dob": "Date of birth is required for users."})
+            
         return attrs
 
     def create(self, validated_data):
@@ -86,7 +91,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
-        read_only_fields = ('id', 'username', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
+        read_only_fields = ('id', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
 
     def get_followers_count(self, obj):
         return obj.followers.count()

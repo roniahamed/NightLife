@@ -11,6 +11,13 @@ from .serializers import (
     VenueOperatingHourSerializer, VenueReviewSerializer
 )
 from . import services
+import stripe
+from django.conf import settings
+from rest_framework.views import APIView
+from apps.common.permissions import IsActiveProfileVenue
+from apps.common.utils import success_response, error_response
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class VenueCategoryViewSet(viewsets.ModelViewSet):
     queryset = VenueCategory.objects.all()
@@ -147,3 +154,77 @@ class VenueReviewViewSet(viewsets.ModelViewSet):
             comment=serializer.validated_data.get('comment', '')
         )
         serializer.instance = review
+
+class VenueStripeOnboardingView(APIView):
+    permission_classes = [IsAuthenticated, IsActiveProfileVenue]
+
+    def post(self, request):
+        user = request.user
+        if not hasattr(user, 'venue_profile'):
+            return error_response(message="You do not have a venue profile.", status=status.HTTP_400_BAD_REQUEST)
+            
+        venue = user.venue_profile
+        
+        try:
+            # Create Stripe Account if not exists
+            if not venue.stripe_account_id:
+                account = stripe.Account.create(
+                    type="express",
+                    email=venue.owner.email,
+                    business_type="company",
+                    company={"name": venue.name},
+                )
+                venue.stripe_account_id = account.id
+                venue.save()
+            
+            # Create Account Link
+            account_link = stripe.AccountLink.create(
+                account=venue.stripe_account_id,
+                refresh_url=request.build_absolute_uri('/api/venues/stripe/onboard/refresh/'),
+                return_url=request.build_absolute_uri('/api/venues/stripe/onboard/return/'),
+                type="account_onboarding",
+            )
+            
+            return success_response(data={"url": account_link.url})
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+
+class VenueStripeOnboardingReturnView(APIView):
+    permission_classes = [IsAuthenticated, IsActiveProfileVenue]
+
+    def get(self, request):
+        user = request.user
+        venue = getattr(user, 'venue_profile', None)
+        if not venue or not venue.stripe_account_id:
+            return error_response(message="Invalid venue or Stripe account.", status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            account = stripe.Account.retrieve(venue.stripe_account_id)
+            if account.details_submitted:
+                # Release held funds
+                from apps.events.models import TicketPurchase
+                held_purchases = TicketPurchase.objects.filter(
+                    event__venue=venue, 
+                    status='completed', 
+                    funds_transferred_to_venue=False
+                )
+                
+                total_transferred = 0
+                for purchase in held_purchases:
+                    amount_to_transfer = purchase.total_amount - purchase.platform_fee
+                    if amount_to_transfer > 0:
+                        stripe.Transfer.create(
+                            amount=int(amount_to_transfer * 100),
+                            currency='usd',
+                            destination=venue.stripe_account_id,
+                            metadata={'purchase_id': str(purchase.id)}
+                        )
+                    purchase.funds_transferred_to_venue = True
+                    purchase.save()
+                    total_transferred += amount_to_transfer
+                    
+                return success_response(message=f"Onboarding successful. Released ${total_transferred} in held funds.")
+            else:
+                return error_response(message="Stripe onboarding not completed.", status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)

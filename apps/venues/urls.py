@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     AmenityViewSet, VenueCategoryViewSet, VenueViewSet, VenueGalleryViewSet,
-    VenueOperatingHourViewSet, VenueReviewViewSet
+    VenueOperatingHourViewSet, VenueReviewViewSet, VenueStripeOnboardingView,
+    VenueStripeOnboardingReturnView
 )
 
 router = DefaultRouter()
@@ -62,5 +63,8 @@ urlpatterns = [
 
     # Base routes (put at bottom so `<uuid:venue_pk>/...` matches correctly if needed,
     # though router handles its own regex so we are fine).
+    # Base routes
+    path('stripe/onboard/', VenueStripeOnboardingView.as_view(), name='venue-stripe-onboard'),
+    path('stripe/onboard/return/', VenueStripeOnboardingReturnView.as_view(), name='venue-stripe-onboard-return'),
     path('', include(router.urls)),
 ]

@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'apps.security',
     'apps.users',
     'apps.venues',
-    # 'apps.events',
+    'apps.events',
 ]
 
 MIDDLEWARE = [
@@ -120,6 +120,13 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+# Stripe Configuration
+STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', 'pk_test_placeholder')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_placeholder')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', 'whsec_placeholder')
+# Application fee (percentage) the platform takes from each ticket sale
+APPLICATION_FEE_PERCENTAGE = 10  # 10%
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
