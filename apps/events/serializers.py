@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from .models import EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase
 
 class EventCategorySerializer(serializers.ModelSerializer):
@@ -63,16 +65,17 @@ class EventSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'venue', 'created_at', 'updated_at']
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_rsvp_count(self, obj):
         return obj.rsvps.filter(status='going').count()
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_user_rsvp_status(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Check if user has an active user profile
-            active_profile = request.auth.payload.get('active_profile') if hasattr(request, 'auth') and request.auth else request.user.registration_type
-            if active_profile == 'user':
-                rsvp = obj.rsvps.filter(user=request.user).first()
-                if rsvp:
-                    return rsvp.status
+            try:
+                rsvp = EventRSVP.objects.get(user=request.user, event=obj)
+                return rsvp.status
+            except EventRSVP.DoesNotExist:
+                return None
         return None

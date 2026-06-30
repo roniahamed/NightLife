@@ -16,6 +16,8 @@ from django.conf import settings
 from rest_framework.views import APIView
 from apps.common.permissions import IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -105,6 +107,8 @@ class VenueGalleryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return VenueGallery.objects.none()
         return VenueGallery.objects.filter(venue_id=self.kwargs['venue_pk'])
 
     def perform_create(self, serializer):
@@ -122,6 +126,8 @@ class VenueOperatingHourViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return VenueOperatingHour.objects.none()
         return VenueOperatingHour.objects.filter(venue_id=self.kwargs['venue_pk'])
 
     def perform_create(self, serializer):
@@ -143,6 +149,8 @@ class VenueReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return VenueReview.objects.none()
         return VenueReview.objects.filter(venue_id=self.kwargs['venue_pk'])
 
     def perform_create(self, serializer):
@@ -158,6 +166,7 @@ class VenueReviewViewSet(viewsets.ModelViewSet):
 class VenueStripeOnboardingView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
+    @extend_schema(summary="Stripe Onboarding", description="Generates Stripe Connect onboarding URL.", request=None, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         user = request.user
         if not hasattr(user, 'venue_profile'):
@@ -192,6 +201,7 @@ class VenueStripeOnboardingView(APIView):
 class VenueStripeOnboardingReturnView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
+    @extend_schema(summary="Stripe Onboarding Return", description="Handles return from Stripe Connect onboarding.", request=None, responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         user = request.user
         venue = getattr(user, 'venue_profile', None)

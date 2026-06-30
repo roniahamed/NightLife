@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from .models import Venue, Amenity, VenueGallery, VenueOperatingHour, VenueReview, VenueStatistic, VenueCategory, VenueFollow
 
 class AmenitySerializer(serializers.ModelSerializer):
@@ -60,6 +62,7 @@ class VenueSerializer(serializers.ModelSerializer):
     )
     
     # Simple GeoJSON representation for location if available
+    location = serializers.CharField(read_only=True)
     location_coordinates = serializers.SerializerMethodField()
 
     latitude = serializers.FloatField(write_only=True, required=False)
@@ -77,6 +80,7 @@ class VenueSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_location_coordinates(self, obj):
         if obj.location:
             return {
@@ -85,12 +89,14 @@ class VenueSerializer(serializers.ModelSerializer):
             }
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_distance(self, obj):
         if hasattr(obj, 'distance') and obj.distance is not None:
             # Returns distance in kilometers if calculated in the viewset
             return getattr(obj.distance, 'km', obj.distance)
         return None
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_following(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:

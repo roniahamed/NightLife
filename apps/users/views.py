@@ -27,7 +27,9 @@ from .serializers import (
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers as rf_serializers
 
 User = get_user_model()
 
@@ -78,7 +80,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class SwitchProfileView(APIView):
     permission_classes = (IsAuthenticated,)
     
-    @extend_schema(summary="Switch Profile", description="Switch between 'user' and 'venue' profiles without a password. Returns a new JWT with updated active_profile.", tags=['Authentication'])
+    @extend_schema(
+        summary="Switch Profile", 
+        description="Switch between 'user' and 'venue' profiles without a password. Returns a new JWT with updated active_profile.", 
+        tags=['Authentication'],
+        request=inline_serializer(name='SwitchProfileRequest', fields={'profile': rf_serializers.CharField()}),
+        responses={200: inline_serializer(name='SwitchProfileResponse', fields={'refresh': rf_serializers.CharField(), 'access': rf_serializers.CharField(), 'active_profile': rf_serializers.CharField()})}
+    )
     def post(self, request):
         target = request.data.get('profile')
         user = request.user
@@ -296,7 +304,13 @@ class PublicProfileView(generics.RetrieveAPIView):
 class FollowUserView(APIView):
     permission_classes = (IsAuthenticated, IsActiveProfileUser)
 
-    @extend_schema(summary="Follow/Unfollow User", description="Toggles follow status for the given username.", tags=['Profile'])
+    @extend_schema(
+        summary="Follow/Unfollow User", 
+        description="Toggles follow status for the given username.", 
+        tags=['Profile'],
+        request=None,
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def post(self, request, username):
         if request.user.username == username:
             return error_response(message="You cannot follow yourself.", status=status.HTTP_400_BAD_REQUEST)
@@ -323,6 +337,8 @@ class FollowersListView(generics.ListAPIView):
 
     @extend_schema(summary="Get Followers", description="Lists the followers of the given username.", tags=['Profile'])
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return UserFollow.objects.none()
         username = self.kwargs['username']
         user = get_object_or_404(User, username=username)
         return UserFollow.objects.filter(following=user).select_related('follower')
@@ -343,6 +359,8 @@ class FollowingListView(generics.ListAPIView):
 
     @extend_schema(summary="Get Following", description="Lists the users the given username is following.", tags=['Profile'])
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return UserFollow.objects.none()
         username = self.kwargs['username']
         user = get_object_or_404(User, username=username)
         return UserFollow.objects.filter(follower=user).select_related('following')
@@ -359,7 +377,13 @@ class FollowingListView(generics.ListAPIView):
 class BlockUserView(APIView):
     permission_classes = (IsAuthenticated, IsActiveProfileUser)
 
-    @extend_schema(summary="Block/Unblock User", description="Toggles block status for the given username.", tags=['Profile'])
+    @extend_schema(
+        summary="Block/Unblock User", 
+        description="Toggles block status for the given username.", 
+        tags=['Profile'],
+        request=None,
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def post(self, request, username):
         if request.user.username == username:
             return error_response(message="You cannot block yourself.", status=status.HTTP_400_BAD_REQUEST)
@@ -402,6 +426,8 @@ class BlockedUsersListView(generics.ListAPIView):
 
     @extend_schema(summary="Get Blocked Users", description="Lists the users blocked by the authenticated user.", tags=['Profile'])
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return UserBlock.objects.none()
         return UserBlock.objects.filter(blocker=self.request.user).select_related('blocked')
 
 class UserSettingsView(generics.RetrieveUpdateAPIView):

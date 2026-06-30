@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.gis.geos import Point
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from .models import UserFollow, UserBlock, UserReport, UserSettings
 
 User = get_user_model()
@@ -93,17 +95,21 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
         read_only_fields = ('id', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_followers_count(self, obj):
         return obj.followers.count()
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_following_count(self, obj):
         return obj.following.count()
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_lat(self, obj):
         if obj.location:
             return obj.location.y
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_lng(self, obj):
         if obj.location:
             return obj.location.x
@@ -133,23 +139,28 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng', 'registration_type')
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_followers_count(self, obj):
         return obj.followers.count()
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_following_count(self, obj):
         return obj.following.count()
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_following(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return UserFollow.objects.filter(follower=request.user, following=obj).exists()
         return False
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_lat(self, obj):
         if obj.location:
             return obj.location.y
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_lng(self, obj):
         if obj.location:
             return obj.location.x

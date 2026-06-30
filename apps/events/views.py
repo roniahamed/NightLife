@@ -3,7 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers as rf_serializers
 
 from django.conf import settings
 from .models import EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase
@@ -74,7 +76,13 @@ class EventViewSet(viewsets.ModelViewSet):
 class EventRSVPView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
 
-    @extend_schema(summary="RSVP to Event", description="RSVP to an event. Requires active_profile='user'. Status can be 'going' or 'interested' or 'remove'.", tags=['Events'])
+    @extend_schema(
+        summary="RSVP to Event", 
+        description="RSVP to an event. Requires active_profile='user'. Status can be 'going' or 'interested' or 'remove'.", 
+        tags=['Events'],
+        request=inline_serializer(name='EventRSVPRequest', fields={'status': rf_serializers.CharField()}),
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def post(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
         status_req = request.data.get('status')
@@ -118,6 +126,8 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
     
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return TicketPurchase.objects.none()
         return TicketPurchase.objects.filter(user=self.request.user)
         
     @extend_schema(summary="Purchase Ticket", description="Creates a Stripe Payment Intent to purchase a ticket.")
@@ -190,6 +200,7 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
 class StripeWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
     
+    @extend_schema(summary="Stripe Webhook", description="Webhook handler for Stripe payment events.", request=None, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
