@@ -1932,8 +1932,9 @@ paths:
   /api/users/switch-profile/:
     post:
       operationId: users_switch_profile_create
-      description: Switch between 'user' and 'venue' profiles without a password.
-        Returns a new JWT with updated active_profile.
+      description: Switch between 'user' and 'venue' profiles. Requires 'profile'
+        target and the target 'profile_id'. Validates ownership of the profile and
+        role permissions before returning a new JWT with updated active_profile.
       summary: Switch Profile
       tags:
       - Authentication
@@ -4038,9 +4039,15 @@ components:
           nullable: true
         caption:
           type: string
-        mood:
-          type: string
-          maxLength: 50
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          nullable: true
+          maxItems: 10
         location_venue:
           type: string
           format: uuid
@@ -4064,11 +4071,18 @@ components:
         comments_count:
           type: integer
           readOnly: true
+        shares_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         is_liked:
           type: boolean
           readOnly: true
         is_saved:
           type: boolean
+          readOnly: true
+        recent_comments:
+          type: string
           readOnly: true
         created_at:
           type: string
@@ -4470,9 +4484,15 @@ components:
           nullable: true
         caption:
           type: string
-        mood:
-          type: string
-          maxLength: 50
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          nullable: true
+          maxItems: 10
         location_venue:
           type: string
           format: uuid
@@ -4496,11 +4516,18 @@ components:
         comments_count:
           type: integer
           readOnly: true
+        shares_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         is_liked:
           type: boolean
           readOnly: true
         is_saved:
           type: boolean
+          readOnly: true
+        recent_comments:
+          type: string
           readOnly: true
         created_at:
           type: string
@@ -4521,6 +4548,7 @@ components:
       - location_coordinates
       - media
       - mentions
+      - recent_comments
       - updated_at
       - venue_profile
     PostMedia:
@@ -4767,8 +4795,11 @@ components:
       properties:
         profile:
           type: string
+        profile_id:
+          type: string
       required:
       - profile
+      - profile_id
     SwitchProfileResponse:
       type: object
       properties:
@@ -5359,6 +5390,16 @@ components:
       required:
       - email
       - otp
+    VisibilityEnum:
+      enum:
+      - public
+      - followers
+      - only_me
+      type: string
+      description: |-
+        * `public` - Public
+        * `followers` - Followers
+        * `only_me` - Only Me
   securitySchemes:
     cookieAuth:
       type: apiKey

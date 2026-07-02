@@ -82,25 +82,38 @@ class SwitchProfileView(APIView):
     
     @extend_schema(
         summary="Switch Profile", 
-        description="Switch between 'user' and 'venue' profiles without a password. Returns a new JWT with updated active_profile.", 
+        description="Switch between 'user' and 'venue' profiles. Requires 'profile' target and the target 'profile_id'. Validates ownership of the profile and role permissions before returning a new JWT with updated active_profile.", 
         tags=['Authentication'],
-        request=inline_serializer(name='SwitchProfileRequest', fields={'profile': rf_serializers.CharField()}),
+        request=inline_serializer(name='SwitchProfileRequest', fields={
+            'profile': rf_serializers.CharField(),
+            'profile_id': rf_serializers.CharField()
+        }),
         responses={200: inline_serializer(name='SwitchProfileResponse', fields={'refresh': rf_serializers.CharField(), 'access': rf_serializers.CharField(), 'active_profile': rf_serializers.CharField()})}
     )
     def post(self, request):
         target = request.data.get('profile')
+        profile_id = request.data.get('profile_id')
         user = request.user
         
         if target not in ['user', 'venue']:
             return error_response(message="Invalid profile target.", status=status.HTTP_400_BAD_REQUEST)
             
+        if not profile_id:
+            return error_response(message="profile_id is required.", status=status.HTTP_400_BAD_REQUEST)
+            
         if target == 'venue':
+            if user.registration_type != 'venue':
+                return error_response(message="Your account is not registered as a venue account.", status=status.HTTP_403_FORBIDDEN)
             if not hasattr(user, 'venue_profile'):
                 return error_response(message="You do not have a venue profile.", status=status.HTTP_403_FORBIDDEN)
+            if str(user.venue_profile.id) != str(profile_id):
+                return error_response(message="This venue profile does not belong to you.", status=status.HTTP_403_FORBIDDEN)
             if not user.venue_profile.is_approved:
                 return error_response(message="Your venue is pending admin approval.", status=status.HTTP_403_FORBIDDEN)
         
         if target == 'user':
+            if str(user.id) != str(profile_id):
+                return error_response(message="This user profile does not belong to you.", status=status.HTTP_403_FORBIDDEN)
             if not user.is_user_profile_active:
                 return error_response(message="Your user profile is inactive. Please activate it first.", status=status.HTTP_403_FORBIDDEN)
                 
