@@ -5,7 +5,7 @@ from .views import (
     VerifyResetOTPView, ResetPasswordView, ChangePasswordView, ProfileView,
     PublicProfileView, FollowUserView, FollowersListView, FollowingListView,
     BlockUserView, ReportUserView, BlockedUsersListView, UserSettingsView,
-    CustomTokenObtainPairView, SwitchProfileView
+    CustomTokenObtainPairView, SwitchProfileView, AvailableProfilesView
 )
 
 urlpatterns = [
@@ -18,6 +18,7 @@ urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('switch-profile/', SwitchProfileView.as_view(), name='switch-profile'),
+    path('available-profiles/', AvailableProfilesView.as_view(), name='available-profiles'),
     
     # Password Management
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),

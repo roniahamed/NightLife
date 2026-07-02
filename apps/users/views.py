@@ -22,8 +22,10 @@ from .serializers import (
     RegisterSerializer, VerifyOTPSerializer, ResendOTPSerializer, ForgotPasswordSerializer,
     VerifyResetOTPSerializer, ResetPasswordSerializer, ChangePasswordSerializer, ProfileSerializer,
     UserPublicProfileSerializer, UserFollowerSerializer, UserFollowingSerializer, UserReportSerializer,
-    UserBlockedSerializer, UserSettingsSerializer, CustomTokenObtainPairSerializer
+    UserBlockedSerializer, UserSettingsSerializer, CustomTokenObtainPairSerializer,
+    SwitchProfileRequestSerializer, AvailableProfilesResponseSerializer
 )
+from .services import UserProfileService
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
@@ -84,50 +86,42 @@ class SwitchProfileView(APIView):
         summary="Switch Profile", 
         description="Switch between 'user' and 'venue' profiles. Requires 'profile' target and the target 'profile_id'. Validates ownership of the profile and role permissions before returning a new JWT with updated active_profile.", 
         tags=['Authentication'],
-        request=inline_serializer(name='SwitchProfileRequest', fields={
-            'profile': rf_serializers.CharField(),
-            'profile_id': rf_serializers.CharField()
-        }),
+        request=SwitchProfileRequestSerializer,
         responses={200: inline_serializer(name='SwitchProfileResponse', fields={'refresh': rf_serializers.CharField(), 'access': rf_serializers.CharField(), 'active_profile': rf_serializers.CharField()})}
     )
     def post(self, request):
-        target = request.data.get('profile')
-        profile_id = request.data.get('profile_id')
-        user = request.user
+        serializer = SwitchProfileRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return error_response(message="Invalid data.", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        target = serializer.validated_data['profile']
+        profile_id = serializer.validated_data['profile_id']
         
-        if target not in ['user', 'venue']:
-            return error_response(message="Invalid profile target.", status=status.HTTP_400_BAD_REQUEST)
+        from rest_framework.exceptions import PermissionDenied
+        try:
+            token_data = UserProfileService.switch_profile(request.user, target, profile_id)
+        except PermissionDenied as e:
+            return error_response(message=str(e), status=status.HTTP_403_FORBIDDEN)
             
-        if not profile_id:
-            return error_response(message="profile_id is required.", status=status.HTTP_400_BAD_REQUEST)
-            
-        if target == 'venue':
-            if user.registration_type != 'venue':
-                return error_response(message="Your account is not registered as a venue account.", status=status.HTTP_403_FORBIDDEN)
-            if not hasattr(user, 'venue_profile'):
-                return error_response(message="You do not have a venue profile.", status=status.HTTP_403_FORBIDDEN)
-            if str(user.venue_profile.id) != str(profile_id):
-                return error_response(message="This venue profile does not belong to you.", status=status.HTTP_403_FORBIDDEN)
-            if not user.venue_profile.is_approved:
-                return error_response(message="Your venue is pending admin approval.", status=status.HTTP_403_FORBIDDEN)
-        
-        if target == 'user':
-            if str(user.id) != str(profile_id):
-                return error_response(message="This user profile does not belong to you.", status=status.HTTP_403_FORBIDDEN)
-            if not user.is_user_profile_active:
-                return error_response(message="Your user profile is inactive. Please activate it first.", status=status.HTTP_403_FORBIDDEN)
-                
-        # Generate new token with new active_profile
-        refresh = RefreshToken.for_user(user)
-        refresh['active_profile'] = target
-        
         return success_response(
-            data={
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'active_profile': target
-            },
+            data=token_data,
             message=f"Successfully switched to {target} profile."
+        )
+
+class AvailableProfilesView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    @extend_schema(
+        summary="Get Available Profiles",
+        description="Returns a list of all profiles (user and venue) that the authenticated user can switch to.",
+        tags=['Authentication'],
+        responses={200: AvailableProfilesResponseSerializer}
+    )
+    def get(self, request):
+        profiles = UserProfileService.get_available_profiles(request.user, request=request)
+        return success_response(
+            data={'profiles': profiles},
+            message="Available profiles fetched successfully."
         )
 
 class VerifyOTPView(APIView):

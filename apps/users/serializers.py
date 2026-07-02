@@ -216,3 +216,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['active_profile'] = user.registration_type
         return token
+
+class SwitchProfileRequestSerializer(serializers.Serializer):
+    profile = serializers.ChoiceField(choices=['user', 'venue'])
+    profile_id = serializers.CharField()
+
+class ProfileDetailSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    profile_type = serializers.CharField()
+    username = serializers.CharField(allow_null=True, required=False)
+    name = serializers.CharField()
+    image = serializers.CharField(allow_null=True, required=False)
+    cover_image = serializers.CharField(allow_null=True, required=False)
+
+class AvailableProfilesResponseSerializer(serializers.Serializer):
+    profiles = ProfileDetailSerializer(many=True)

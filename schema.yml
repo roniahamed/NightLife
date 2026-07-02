@@ -1515,6 +1515,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserReport'
           description: ''
+  /api/users/available-profiles/:
+    get:
+      operationId: users_available_profiles_retrieve
+      description: Returns a list of all profiles (user and venue) that the authenticated
+        user can switch to.
+      summary: Get Available Profiles
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailableProfilesResponse'
+          description: ''
   /api/users/blocks/:
     get:
       operationId: users_blocks_list
@@ -3222,6 +3240,15 @@ components:
       - id
       - name
       - updated_at
+    AvailableProfilesResponse:
+      type: object
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileDetail'
+      required:
+      - profiles
     ChangePassword:
       type: object
       properties:
@@ -4673,6 +4700,36 @@ components:
       - lng
       - registration_type
       - username
+    ProfileDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        profile_type:
+          type: string
+        username:
+          type: string
+          nullable: true
+        name:
+          type: string
+        image:
+          type: string
+          nullable: true
+        cover_image:
+          type: string
+          nullable: true
+      required:
+      - id
+      - name
+      - profile_type
+    ProfileEnum:
+      enum:
+      - user
+      - venue
+      type: string
+      description: |-
+        * `user` - user
+        * `venue` - venue
     Register:
       type: object
       properties:
@@ -4794,7 +4851,7 @@ components:
       type: object
       properties:
         profile:
-          type: string
+          $ref: '#/components/schemas/ProfileEnum'
         profile_id:
           type: string
       required:
