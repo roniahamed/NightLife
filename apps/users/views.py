@@ -61,6 +61,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     @extend_schema(summary="Register a new user", description="Creates an inactive user and sends a 4-digit OTP to email.", tags=['Authentication'])
     def create(self, request, *args, **kwargs):

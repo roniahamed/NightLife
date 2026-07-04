@@ -4707,6 +4707,8 @@ components:
           type: string
         profile_type:
           type: string
+        is_active:
+          type: boolean
         username:
           type: string
           nullable: true
@@ -4720,6 +4722,7 @@ components:
           nullable: true
       required:
       - id
+      - is_active
       - name
       - profile_type
     ProfileEnum:

@@ -15,7 +15,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password', 'registration_type')
+        fields = ('id', 'first_name', 'last_name', 'email', 'dob', 'password', 'confirm_password', 'registration_type', 'profile_image', 'cover_image')
         
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -38,6 +38,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             dob=validated_data.get('dob'),
+            profile_image=validated_data.get('profile_image'),
+            cover_image=validated_data.get('cover_image'),
             registration_type=validated_data.get('registration_type', 'user'),
             is_user_profile_active=validated_data.get('registration_type', 'user') == 'user',
             is_active=False, # Inactive until OTP is verified
@@ -94,6 +96,21 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
         read_only_fields = ('id', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if getattr(self, 'partial', False) and hasattr(self, 'initial_data'):
+            from django.http import QueryDict
+            # Make initial_data mutable if it's a QueryDict
+            if isinstance(self.initial_data, QueryDict):
+                self.initial_data = self.initial_data.copy()
+            
+            # Remove empty strings from initial_data to prevent validation errors 
+            # for fields that weren't intentionally cleared. 'bio' is an exception if we want to allow clearing it.
+            if type(self.initial_data) is dict or isinstance(self.initial_data, QueryDict):
+                keys_to_remove = [k for k, v in self.initial_data.items() if v == '' and k not in ['bio']]
+                for k in keys_to_remove:
+                    self.initial_data.pop(k)
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_followers_count(self, obj):
@@ -224,6 +241,7 @@ class SwitchProfileRequestSerializer(serializers.Serializer):
 class ProfileDetailSerializer(serializers.Serializer):
     id = serializers.CharField()
     profile_type = serializers.CharField()
+    is_active = serializers.BooleanField()
     username = serializers.CharField(allow_null=True, required=False)
     name = serializers.CharField()
     image = serializers.CharField(allow_null=True, required=False)

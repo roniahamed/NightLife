@@ -14,11 +14,20 @@ class UserProfileService:
     def get_available_profiles(cls, user, request=None):
         profiles = []
         
+        # Get active profile type from request auth token
+        active_profile_type = 'user'
+        if request and request.auth and isinstance(request.auth, dict) or hasattr(request.auth, 'get'):
+            active_profile_type = request.auth.get('active_profile', 'user')
+        elif hasattr(user, 'registration_type'):
+            # Fallback if no valid token
+            pass
+            
         # 1. Add User Profile
         user_name = f"{user.first_name} {user.last_name}".strip() or user.username
         profiles.append({
             'id': str(user.id),
             'profile_type': 'user',
+            'is_active': active_profile_type == 'user',
             'username': user.username,
             'name': user_name,
             'image': cls.get_image_url(request, user.profile_image),
@@ -31,6 +40,7 @@ class UserProfileService:
             profiles.append({
                 'id': str(venue.id),
                 'profile_type': 'venue',
+                'is_active': active_profile_type == 'venue',
                 'username': None,
                 'name': venue.name,
                 'image': cls.get_image_url(request, venue.profile_image),

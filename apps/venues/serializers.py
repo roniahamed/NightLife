@@ -80,6 +80,18 @@ class VenueSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if getattr(self, 'partial', False) and hasattr(self, 'initial_data'):
+            from django.http import QueryDict
+            if isinstance(self.initial_data, QueryDict):
+                self.initial_data = self.initial_data.copy()
+            
+            if type(self.initial_data) is dict or isinstance(self.initial_data, QueryDict):
+                keys_to_remove = [k for k, v in self.initial_data.items() if v == '' and k not in ['description']]
+                for k in keys_to_remove:
+                    self.initial_data.pop(k)
+
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_location_coordinates(self, obj):
         if obj.location:
