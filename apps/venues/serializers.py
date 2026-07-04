@@ -45,6 +45,7 @@ class VenueSerializer(serializers.ModelSerializer):
     operating_hours = VenueOperatingHourSerializer(many=True, read_only=True)
     statistic = VenueStatisticSerializer(read_only=True)
     is_following = serializers.SerializerMethodField(read_only=True)
+    is_stripe_connected = serializers.SerializerMethodField(read_only=True)
     
     amenity_ids = serializers.PrimaryKeyRelatedField(
         queryset=Amenity.objects.all(),
@@ -75,7 +76,7 @@ class VenueSerializer(serializers.ModelSerializer):
             'id', 'owner', 'username', 'name', 'description', 'address', 'location', 'location_coordinates',
             'latitude', 'longitude', 'distance', 'profile_image', 'cover_image', 'price_tier', 'capacity',
             'email', 'phone', 'website', 'amenities', 'amenity_ids', 'categories', 'category_ids',
-            'is_active', 'is_following',
+            'is_active', 'is_following', 'is_stripe_connected',
             'gallery', 'operating_hours', 'statistic', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
@@ -112,5 +113,8 @@ class VenueSerializer(serializers.ModelSerializer):
     def get_is_following(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return VenueFollow.objects.filter(user=request.user, venue=obj).exists()
+            return obj.venue_follows.filter(user=request.user).exists()
         return False
+        
+    def get_is_stripe_connected(self, obj):
+        return bool(obj.stripe_account_id)

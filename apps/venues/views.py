@@ -132,6 +132,34 @@ class VenueViewSet(viewsets.ModelViewSet):
         services.unfollow_venue(request.user, venue)
         return Response({"status": "unfollowed venue"}, status=status.HTTP_200_OK)
 
+    @extend_schema(summary="Venue Dashboard", description="Get earnings and ticket stats for the logged-in venue.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venues'])
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsActiveProfileVenue])
+    def dashboard(self, request):
+        venue = request.user.venue_profile
+        from apps.events.models import TicketPurchase, Event
+        from django.db.models import Sum
+        from apps.events.serializers import TicketPurchaseSerializer
+        
+        purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
+        
+        total_tickets_sold = purchases.aggregate(total=Sum('quantity'))['total'] or 0
+        total_revenue = purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+        platform_fees = purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
+        net_earnings = total_revenue - platform_fees
+        
+        active_events_count = Event.objects.filter(venue=venue, is_active=True).count()
+        recent_transactions = purchases.order_by('-created_at')[:5]
+        
+        return success_response(data={
+            "total_tickets_sold": total_tickets_sold,
+            "total_revenue": float(total_revenue),
+            "platform_fees_paid": float(platform_fees),
+            "net_earnings": float(net_earnings),
+            "active_events_count": active_events_count,
+            "recent_transactions": TicketPurchaseSerializer(recent_transactions, many=True).data
+        })
+
+
 
 @extend_schema_view(
     list=extend_schema(tags=['Venue Details']),
@@ -222,7 +250,7 @@ class VenueReviewViewSet(viewsets.ModelViewSet):
 class VenueStripeOnboardingView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
-    @extend_schema(summary="Stripe Onboarding", description="Generates Stripe Connect onboarding URL.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venue Payments'])
+    @extend_schema(summary="Stripe Onboarding", description="Generates Stripe Connect onboarding URL.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Stripe Integration'])
     def post(self, request):
         user = request.user
         if not hasattr(user, 'venue_profile'):
@@ -257,7 +285,7 @@ class VenueStripeOnboardingView(APIView):
 class VenueStripeOnboardingReturnView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
-    @extend_schema(summary="Stripe Onboarding Return", description="Handles return from Stripe Connect onboarding.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venue Payments'])
+    @extend_schema(summary="Stripe Onboarding Return", description="Handles return from Stripe Connect onboarding.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Stripe Integration'])
     def get(self, request):
         user = request.user
         venue = getattr(user, 'venue_profile', None)

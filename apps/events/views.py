@@ -264,7 +264,7 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
 class StripeWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
     
-    @extend_schema(summary="Stripe Webhook", description="Webhook handler for Stripe payment events.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Event Payments'])
+    @extend_schema(summary="Stripe Webhook", description="Webhook handler for Stripe payment events.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Stripe Integration'])
     def post(self, request):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
