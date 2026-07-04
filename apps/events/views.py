@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers as rf_serializers
 
@@ -20,11 +20,23 @@ import stripe
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+@extend_schema_view(
+    list=extend_schema(tags=['Event Categories']),
+    retrieve=extend_schema(tags=['Event Categories']),
+)
 class EventCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = EventCategory.objects.all()
     serializer_class = EventCategorySerializer
     permission_classes = [permissions.AllowAny]
 
+@extend_schema_view(
+    list=extend_schema(tags=['Events']),
+    retrieve=extend_schema(tags=['Events']),
+    create=extend_schema(tags=['Events']),
+    update=extend_schema(tags=['Events']),
+    partial_update=extend_schema(tags=['Events']),
+    destroy=extend_schema(tags=['Events']),
+)
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
     pagination_class = StandardResultsSetPagination
@@ -103,6 +115,14 @@ class EventRSVPView(APIView):
         
         return success_response(message=f"RSVP updated to {status_req} successfully.")
 
+@extend_schema_view(
+    list=extend_schema(tags=['Event Tickets']),
+    retrieve=extend_schema(tags=['Event Tickets']),
+    create=extend_schema(tags=['Event Tickets']),
+    update=extend_schema(tags=['Event Tickets']),
+    partial_update=extend_schema(tags=['Event Tickets']),
+    destroy=extend_schema(tags=['Event Tickets']),
+)
 class EventTicketTierViewSet(viewsets.ModelViewSet):
     serializer_class = EventTicketTierSerializer
     
@@ -121,6 +141,13 @@ class EventTicketTierViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You can only create tickets for your own events.")
         serializer.save(event=event)
 
+@extend_schema_view(
+    list=extend_schema(tags=['Event Tickets']),
+    retrieve=extend_schema(tags=['Event Tickets']),
+    update=extend_schema(tags=['Event Tickets']),
+    partial_update=extend_schema(tags=['Event Tickets']),
+    destroy=extend_schema(tags=['Event Tickets']),
+)
 class TicketPurchaseViewSet(viewsets.ModelViewSet):
     serializer_class = TicketPurchaseSerializer
     permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
@@ -130,7 +157,7 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
             return TicketPurchase.objects.none()
         return TicketPurchase.objects.filter(user=self.request.user)
         
-    @extend_schema(summary="Purchase Ticket", description="Creates a Stripe Payment Intent to purchase a ticket.")
+    @extend_schema(summary="Purchase Ticket", description="Creates a Stripe Payment Intent to purchase a ticket.", tags=['Event Tickets'])
     def create(self, request, *args, **kwargs):
         tier_id = request.data.get('ticket_tier_id')
         quantity = int(request.data.get('quantity', 1))
@@ -200,7 +227,7 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
 class StripeWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
     
-    @extend_schema(summary="Stripe Webhook", description="Webhook handler for Stripe payment events.", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(summary="Stripe Webhook", description="Webhook handler for Stripe payment events.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Event Payments'])
     def post(self, request):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')

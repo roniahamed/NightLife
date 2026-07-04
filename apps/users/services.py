@@ -34,14 +34,14 @@ class UserProfileService:
             'cover_image': cls.get_image_url(request, user.cover_image)
         })
         
-        # 2. Add Venue Profile if it exists and user is a venue account
-        if user.registration_type == 'venue' and hasattr(user, 'venue_profile'):
+        # 2. Add Venue Profile if it exists
+        if hasattr(user, 'venue_profile'):
             venue = user.venue_profile
             profiles.append({
                 'id': str(venue.id),
                 'profile_type': 'venue',
                 'is_active': active_profile_type == 'venue',
-                'username': None,
+                'username': venue.username,
                 'name': venue.name,
                 'image': cls.get_image_url(request, venue.profile_image),
                 'cover_image': cls.get_image_url(request, venue.cover_image)
@@ -52,8 +52,6 @@ class UserProfileService:
     @staticmethod
     def switch_profile(user, target_profile, profile_id):
         if target_profile == 'venue':
-            if user.registration_type != 'venue':
-                raise PermissionDenied("Your account is not registered as a venue account.")
             if not hasattr(user, 'venue_profile'):
                 raise PermissionDenied("You do not have a venue profile.")
             if str(user.venue_profile.id) != str(profile_id):
@@ -64,8 +62,11 @@ class UserProfileService:
         elif target_profile == 'user':
             if str(user.id) != str(profile_id):
                 raise PermissionDenied("This user profile does not belong to you.")
+            
+            # Auto-activate user profile if it was inactive
             if not user.is_user_profile_active:
-                raise PermissionDenied("Your user profile is inactive. Please activate it first.")
+                user.is_user_profile_active = True
+                user.save(update_fields=['is_user_profile_active'])
         
         # Generate new token with new active_profile
         refresh = RefreshToken.for_user(user)

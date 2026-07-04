@@ -72,7 +72,7 @@ class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
         fields = [
-            'id', 'owner', 'name', 'description', 'address', 'location', 'location_coordinates',
+            'id', 'owner', 'username', 'name', 'description', 'address', 'location', 'location_coordinates',
             'latitude', 'longitude', 'distance', 'profile_image', 'cover_image', 'price_tier', 'capacity',
             'email', 'phone', 'website', 'amenities', 'amenity_ids', 'categories', 'category_ids',
             'is_active', 'is_following',

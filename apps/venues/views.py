@@ -17,16 +17,28 @@ from django.conf import settings
 from rest_framework.views import APIView
 from apps.common.permissions import IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from drf_spectacular.types import OpenApiTypes
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venue Category & Amenities']),
+    retrieve=extend_schema(tags=['Venue Category & Amenities']),
+    create=extend_schema(tags=['Venue Category & Amenities']),
+    update=extend_schema(tags=['Venue Category & Amenities']),
+    partial_update=extend_schema(tags=['Venue Category & Amenities']),
+    destroy=extend_schema(tags=['Venue Category & Amenities']),
+)
 class VenueCategoryViewSet(viewsets.ModelViewSet):
     queryset = VenueCategory.objects.all()
     serializer_class = VenueCategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venue Category & Amenities']),
+    retrieve=extend_schema(tags=['Venue Category & Amenities']),
+)
 class AmenityViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Read-only endpoint for amenities.
@@ -37,6 +49,16 @@ class AmenityViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venues']),
+    retrieve=extend_schema(tags=['Venues']),
+    create=extend_schema(tags=['Venues']),
+    update=extend_schema(tags=['Venues']),
+    partial_update=extend_schema(tags=['Venues']),
+    destroy=extend_schema(tags=['Venues']),
+    follow=extend_schema(tags=['Venues']),
+    unfollow=extend_schema(tags=['Venues']),
+)
 class VenueViewSet(viewsets.ModelViewSet):
     queryset = Venue.objects.all()
     serializer_class = VenueSerializer
@@ -44,7 +66,18 @@ class VenueViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_queryset(self):
-        queryset = Venue.objects.all()
+        from django.db.models import Q
+        
+        # Base filter: only show approved and active venues
+        # unless user is admin or the owner of the unapproved venue
+        if self.request.user and self.request.user.is_staff:
+            queryset = Venue.objects.all()
+        elif self.request.user and self.request.user.is_authenticated:
+            queryset = Venue.objects.filter(
+                Q(is_approved=True, is_active=True) | Q(owner=self.request.user)
+            )
+        else:
+            queryset = Venue.objects.filter(is_approved=True, is_active=True)
         
         lat = self.request.query_params.get('latitude')
         lng = self.request.query_params.get('longitude')
@@ -59,10 +92,6 @@ class VenueViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        active_profile = self.request.auth.payload.get('active_profile') if hasattr(self.request, 'auth') and self.request.auth else self.request.user.registration_type
-        if active_profile != 'venue':
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError("You must switch to your venue profile to create a venue.")
         
         if hasattr(self.request.user, 'venue_profile'):
             from rest_framework.exceptions import ValidationError
@@ -104,6 +133,14 @@ class VenueViewSet(viewsets.ModelViewSet):
         return Response({"status": "unfollowed venue"}, status=status.HTTP_200_OK)
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venue Details']),
+    retrieve=extend_schema(tags=['Venue Details']),
+    create=extend_schema(tags=['Venue Details']),
+    update=extend_schema(tags=['Venue Details']),
+    partial_update=extend_schema(tags=['Venue Details']),
+    destroy=extend_schema(tags=['Venue Details']),
+)
 class VenueGalleryViewSet(viewsets.ModelViewSet):
     serializer_class = VenueGallerySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -123,6 +160,15 @@ class VenueGalleryViewSet(viewsets.ModelViewSet):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venue Details']),
+    retrieve=extend_schema(tags=['Venue Details']),
+    create=extend_schema(tags=['Venue Details']),
+    update=extend_schema(tags=['Venue Details']),
+    partial_update=extend_schema(tags=['Venue Details']),
+    destroy=extend_schema(tags=['Venue Details']),
+    bulk_update_hours=extend_schema(tags=['Venue Details']),
+)
 class VenueOperatingHourViewSet(viewsets.ModelViewSet):
     serializer_class = VenueOperatingHourSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -146,6 +192,14 @@ class VenueOperatingHourViewSet(viewsets.ModelViewSet):
         return Response({"status": "hours updated"}, status=status.HTTP_200_OK)
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Venue Details']),
+    retrieve=extend_schema(tags=['Venue Details']),
+    create=extend_schema(tags=['Venue Details']),
+    update=extend_schema(tags=['Venue Details']),
+    partial_update=extend_schema(tags=['Venue Details']),
+    destroy=extend_schema(tags=['Venue Details']),
+)
 class VenueReviewViewSet(viewsets.ModelViewSet):
     serializer_class = VenueReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -168,7 +222,7 @@ class VenueReviewViewSet(viewsets.ModelViewSet):
 class VenueStripeOnboardingView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
-    @extend_schema(summary="Stripe Onboarding", description="Generates Stripe Connect onboarding URL.", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(summary="Stripe Onboarding", description="Generates Stripe Connect onboarding URL.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venue Payments'])
     def post(self, request):
         user = request.user
         if not hasattr(user, 'venue_profile'):
@@ -203,7 +257,7 @@ class VenueStripeOnboardingView(APIView):
 class VenueStripeOnboardingReturnView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]
 
-    @extend_schema(summary="Stripe Onboarding Return", description="Handles return from Stripe Connect onboarding.", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(summary="Stripe Onboarding Return", description="Handles return from Stripe Connect onboarding.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venue Payments'])
     def get(self, request):
         user = request.user
         venue = getattr(user, 'venue_profile', None)
