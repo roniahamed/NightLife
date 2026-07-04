@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     EventViewSet, EventCategoryViewSet, EventRSVPView,
-    EventTicketTierViewSet, TicketPurchaseViewSet, StripeWebhookView
+    EventTicketTierViewSet, TicketPurchaseViewSet, StripeWebhookView,
+    EventLineupViewSet
 )
 
 router = DefaultRouter()
@@ -31,12 +32,25 @@ event_tickets_detail = EventTicketTierViewSet.as_view({
     'delete': 'destroy'
 })
 
+event_lineup_list = EventLineupViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+event_lineup_detail = EventLineupViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+
 urlpatterns = [
     path('webhook/stripe/', StripeWebhookView.as_view(), name='stripe-webhook'),
     path('purchases/', ticket_purchases_list, name='ticket-purchases-list'),
     path('purchases/<str:pk>/', ticket_purchases_detail, name='ticket-purchases-detail'),
     path('<str:event_pk>/tickets/', event_tickets_list, name='event-tickets-list'),
     path('<str:event_pk>/tickets/<str:pk>/', event_tickets_detail, name='event-tickets-detail'),
+    path('<str:event_pk>/lineups/', event_lineup_list, name='event-lineups-list'),
+    path('<str:event_pk>/lineups/<str:pk>/', event_lineup_detail, name='event-lineups-detail'),
     path('<str:pk>/rsvp/', EventRSVPView.as_view(), name='event-rsvp'),
     path('', include(router.urls)),
 ]

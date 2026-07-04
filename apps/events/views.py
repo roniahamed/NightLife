@@ -8,10 +8,14 @@ from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers as rf_serializers
 
 from django.conf import settings
-from .models import EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase
+from .models import (
+    EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase,
+    EventLineup
+)
 from .serializers import (
-    EventCategorySerializer, EventSerializer, EventRSVPSerializer,
-    EventTicketTierSerializer, TicketPurchaseSerializer
+    EventCategorySerializer, EventSerializer, 
+    EventRSVPSerializer, EventTicketTierSerializer, TicketPurchaseSerializer,
+    EventLineupSerializer
 )
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.pagination import StandardResultsSetPagination
@@ -70,6 +74,10 @@ class EventViewSet(viewsets.ModelViewSet):
         if not user.venue_profile.is_approved:
             from rest_framework.exceptions import ValidationError
             raise ValidationError("Your venue must be approved by an admin before you can create events.")
+            
+        if not user.venue_profile.stripe_account_id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("You must connect a Stripe account before you can create events.")
             
         serializer.save(venue=user.venue_profile)
 
@@ -142,6 +150,32 @@ class EventTicketTierViewSet(viewsets.ModelViewSet):
         serializer.save(event=event)
 
 @extend_schema_view(
+    list=extend_schema(tags=['Event Lineup']),
+    retrieve=extend_schema(tags=['Event Lineup']),
+    create=extend_schema(tags=['Event Lineup']),
+    update=extend_schema(tags=['Event Lineup']),
+    partial_update=extend_schema(tags=['Event Lineup']),
+    destroy=extend_schema(tags=['Event Lineup']),
+)
+class EventLineupViewSet(viewsets.ModelViewSet):
+    serializer_class = EventLineupSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsActiveProfileVenue()]
+        return [permissions.AllowAny()]
+        
+    def get_queryset(self):
+        return EventLineup.objects.filter(event_id=self.kwargs.get('event_pk'))
+        
+    def perform_create(self, serializer):
+        event = get_object_or_404(Event, pk=self.kwargs.get('event_pk'))
+        if event.venue.owner != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You can only add lineup for your own events.")
+        serializer.save(event=event)
+
+@extend_schema_view(
     list=extend_schema(tags=['Event Tickets']),
     retrieve=extend_schema(tags=['Event Tickets']),
     update=extend_schema(tags=['Event Tickets']),
@@ -171,8 +205,11 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
         venue = event.venue
         
         total_amount = tier.price * quantity
-        # Calculate platform fee (e.g. 10%)
-        fee_percentage = getattr(settings, 'APPLICATION_FEE_PERCENTAGE', 10)
+        
+        # Calculate platform fee based on global Site Settings
+        from apps.common.models import PlatformSettings
+        settings_obj, _ = PlatformSettings.objects.get_or_create(id=1)
+        fee_percentage = settings_obj.ticket_commission_percentage
         platform_fee = (total_amount * fee_percentage) / 100
         
         funds_transferred = False

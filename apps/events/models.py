@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from apps.venues.models import Venue
 
 User = settings.AUTH_USER_MODEL
@@ -37,6 +38,22 @@ class Event(models.Model):
     age_restriction = models.CharField(max_length=10, choices=AGE_RESTRICTIONS, default='none')
     categories = models.ManyToManyField(EventCategory, related_name='events', blank=True)
     
+    capacity = models.PositiveIntegerField(null=True, blank=True)
+    custom_venue_address = models.CharField(max_length=255, null=True, blank=True)
+    
+    DRESS_CODES = (
+        ('Upscale Nightclub', 'Upscale Nightclub'),
+        ('Casual', 'Casual'),
+        ('Smart Casual', 'Smart Casual'),
+        ('Rave / Creative', 'Rave / Creative'),
+        ('Pool Attire', 'Pool Attire'),
+        ('Black Tie', 'Black Tie'),
+        ('No Dress Code', 'No Dress Code'),
+    )
+    dress_code = models.CharField(max_length=50, choices=DRESS_CODES, default='No Dress Code')
+    
+    tags = ArrayField(models.CharField(max_length=50), default=list, blank=True)
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -46,6 +63,26 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.venue.name}"
+
+class EventLineup(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='lineup')
+    artist_name = models.CharField(max_length=255)
+    artist_image = models.ImageField(upload_to='events/lineup/', null=True, blank=True)
+    
+    ROLE_CHOICES = (
+        ('headliner', 'Headliner'),
+        ('co_headliner', 'Co-Headliner'),
+        ('support', 'Support'),
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='support')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.artist_name} ({self.get_role_display()}) at {self.event.title}"
 
 class EventRSVP(models.Model):
     RSVP_STATUS = (
@@ -72,6 +109,7 @@ class EventTicketTier(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_quantity = models.PositiveIntegerField()
     sold_quantity = models.PositiveIntegerField(default=0)
+    description = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

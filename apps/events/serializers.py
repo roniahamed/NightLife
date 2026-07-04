@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
-from .models import EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase
+from .models import EventCategory, Event, EventRSVP, EventTicketTier, TicketPurchase, EventLineup
 
 class EventCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,8 +20,14 @@ class EventRSVPSerializer(serializers.ModelSerializer):
 class EventTicketTierSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventTicketTier
-        fields = ['id', 'event', 'name', 'price', 'total_quantity', 'sold_quantity', 'created_at']
+        fields = ['id', 'event', 'name', 'price', 'total_quantity', 'sold_quantity', 'description', 'created_at']
         read_only_fields = ['id', 'event', 'sold_quantity', 'created_at']
+
+class EventLineupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventLineup
+        fields = ['id', 'event', 'artist_name', 'artist_image', 'role', 'created_at']
+        read_only_fields = ['id', 'event', 'created_at']
 
 class TicketPurchaseSerializer(serializers.ModelSerializer):
     event_title = serializers.CharField(source='event.title', read_only=True)
@@ -52,6 +58,7 @@ class EventSerializer(serializers.ModelSerializer):
     venue_name = serializers.CharField(source='venue.name', read_only=True)
     venue_image = serializers.ImageField(source='venue.profile_image', read_only=True)
     ticket_tiers = EventTicketTierSerializer(many=True, read_only=True)
+    lineup = EventLineupSerializer(many=True, read_only=True)
     rsvp_count = serializers.SerializerMethodField(read_only=True)
     user_rsvp_status = serializers.SerializerMethodField(read_only=True)
 
@@ -60,7 +67,8 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'venue', 'venue_name', 'venue_image', 'title', 'description', 
             'start_time', 'end_time', 'cover_image', 'ticket_price', 'ticket_url',
-            'ticket_tiers', 'age_restriction', 'categories', 'category_ids', 'is_active', 
+            'ticket_tiers', 'lineup', 'capacity', 'custom_venue_address', 'dress_code',
+            'age_restriction', 'categories', 'category_ids', 'tags', 'is_active', 
             'rsvp_count', 'user_rsvp_status', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'venue', 'created_at', 'updated_at']
