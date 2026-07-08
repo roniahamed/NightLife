@@ -176,6 +176,23 @@ def create_stripe_onboarding(venue, refresh_url, return_url):
     
     return account_link.url
 
+def generate_stripe_dashboard_link(venue):
+    """
+    Generates a Stripe Express dashboard login link for the venue owner.
+    """
+    import stripe
+    from django.conf import settings
+    
+    if not venue.stripe_account_id or venue.stripe_account_status != 'active':
+        raise ValueError("Venue must have an active Stripe account to view the dashboard.")
+        
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        login_link = stripe.Account.create_login_link(venue.stripe_account_id)
+        return login_link.url
+    except stripe.error.StripeError as e:
+        raise ValueError(str(e))
+
 def increment_venue_view(venue):
     """
     Increments the view count for a venue.

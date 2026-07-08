@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AmenityViewSet, VenueCategoryViewSet, VenueViewSet, VenueGalleryViewSet,
     VenueOperatingHourViewSet, VenueReviewViewSet, VenueStripeOnboardingView,
-    VenueStripeOnboardingReturnView
+    VenueStripeOnboardingReturnView, VenueStripeDashboardLinkView
 )
 
 router = DefaultRouter()
@@ -66,5 +66,6 @@ urlpatterns = [
     # Base routes
     path('stripe/onboard/', VenueStripeOnboardingView.as_view(), name='venue-stripe-onboard'),
     path('stripe/onboard/return/', VenueStripeOnboardingReturnView.as_view(), name='venue-stripe-onboard-return'),
+    path('stripe/dashboard/', VenueStripeDashboardLinkView.as_view(), name='venue-stripe-dashboard'),
     path('', include(router.urls)),
 ]

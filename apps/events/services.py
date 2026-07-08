@@ -31,25 +31,38 @@ def create_ticket_purchase(user, tier_id, quantity):
         if tier.sold_quantity + active_pending_quantity + quantity > tier.total_quantity:
             raise TicketPurchaseError("Not enough tickets available.")
             
+        # Calculate platform target profit based on global Site Settings
+        from apps.common.models import PlatformSettings
+        from decimal import Decimal, ROUND_HALF_UP
+        
         event = tier.event
         venue = event.venue
         
-        total_amount = tier.price * quantity
+        # Base ticket amount set by the venue
+        base_ticket_amount = tier.price * quantity
+        base_ticket_decimal = Decimal(str(base_ticket_amount))
         
-        # Calculate platform fee based on global Site Settings
+        # Calculate platform fee (deducted from the base ticket / venue payout)
         from apps.common.models import PlatformSettings
-        from decimal import Decimal
+        from decimal import Decimal, ROUND_HALF_UP
+        
         settings_obj, _ = PlatformSettings.objects.get_or_create(id=1)
-        fee_percentage = Decimal(str(settings_obj.ticket_commission_percentage))
-        total_amount_decimal = Decimal(str(total_amount))
-        platform_fee = (total_amount_decimal * fee_percentage) / Decimal('100')
+        fee_percentage = Decimal(str(settings_obj.ticket_commission_percentage)) / Decimal('100')
+        platform_fee = base_ticket_decimal * fee_percentage
+        
+        # Auto-calculate total charge to customer to cover ONLY Stripe's 2.9% + 30 cents fee
+        # Formula: Total = (Base Ticket + $0.30) / (1 - 0.029)
+        # This ensures exactly `base_ticket_decimal` remains after Stripe takes its cut.
+        numerator = base_ticket_decimal + Decimal('0.30')
+        denominator = Decimal('1') - Decimal('0.029')
+        total_customer_charge = (numerator / denominator).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
         purchase = TicketPurchase.objects.create(
             user=user,
             event=event,
             ticket_tier=tier,
             quantity=quantity,
-            total_amount=total_amount,
+            total_amount=total_customer_charge,
             platform_fee=platform_fee,
             funds_transferred_to_venue=False
         )
@@ -57,7 +70,7 @@ def create_ticket_purchase(user, tier_id, quantity):
     try:
         stripe.api_key = settings.STRIPE_SECRET_KEY
         intent_kwargs = {
-            'amount': int(total_amount * 100),
+            'amount': int(total_customer_charge * 100),
             'currency': 'usd',
             'metadata': {
                 'purchase_id': str(purchase.id),
@@ -68,8 +81,8 @@ def create_ticket_purchase(user, tier_id, quantity):
         
         # Use Stripe Connect if venue has a connected account
         if venue.stripe_account_id and venue.stripe_account_status == 'active':
-            # Transfer total_amount minus platform_fee to the venue
-            amount_for_venue = int((total_amount - platform_fee) * 100)
+            # Transfer base_ticket_amount minus platform_fee to the venue
+            amount_for_venue = int((base_ticket_decimal - platform_fee) * 100)
             intent_kwargs['transfer_data'] = {
                 'destination': venue.stripe_account_id,
                 'amount': amount_for_venue,

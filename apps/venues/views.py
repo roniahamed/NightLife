@@ -295,3 +295,22 @@ class VenueStripeOnboardingReturnView(APIView):
                 return error_response(message="Stripe onboarding not completed.", status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+
+class VenueStripeDashboardLinkView(APIView):
+    permission_classes = [IsAuthenticated, IsActiveProfileVenue]
+
+    @extend_schema(summary="Stripe Dashboard Login", description="Generates Stripe Express dashboard login link.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Stripe Integration'])
+    def get(self, request):
+        user = request.user
+        if not hasattr(user, 'venue_profile'):
+            return error_response(message="You do not have a venue profile.", status=status.HTTP_400_BAD_REQUEST)
+            
+        venue = user.venue_profile
+        
+        from .services import generate_stripe_dashboard_link
+        
+        try:
+            url = generate_stripe_dashboard_link(venue)
+            return success_response(data={'url': url})
+        except ValueError as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)

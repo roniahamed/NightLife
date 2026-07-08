@@ -81,17 +81,17 @@ class EventTests(APITestCase):
         
         # RSVP Going
         response = self.client.post(url, {'status': 'going'}, format='json')
-        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='going').exists())
         
         # RSVP Interested
         response = self.client.post(url, {'status': 'interested'}, format='json')
-        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='interested').exists())
         
         # Remove RSVP
         response = self.client.post(url, {'status': 'remove'}, format='json')
-        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(EventRSVP.objects.filter(user=self.regular_user, event=event).exists())
 
 
@@ -179,7 +179,7 @@ class TicketTests(APITestCase):
             'quantity': 1
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(TicketPurchase.objects.count(), 1)
         
         purchase = TicketPurchase.objects.first()
@@ -230,13 +230,16 @@ class TicketTests(APITestCase):
             'quantity': 2
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(TicketPurchase.objects.count(), 1)
         
         purchase = TicketPurchase.objects.first()
         self.assertEqual(purchase.quantity, 2)
-        self.assertEqual(purchase.total_amount, 100.00)
-        self.assertEqual(purchase.platform_fee, Decimal('3.00')) # Default is 3%
+        # 50 * 2 = 100 base ticket
+        # 3% platform fee = 3
+        # Total = (100 + 0.30) / (1 - 0.029) = 100.30 / 0.971 = 103.295... round to 103.30
+        self.assertEqual(purchase.total_amount, Decimal('103.30'))
+        self.assertEqual(purchase.platform_fee, Decimal('3.00'))
         self.assertEqual(purchase.stripe_payment_intent_id, 'pi_test123')
         self.assertEqual(purchase.status, 'pending')
 
@@ -292,4 +295,4 @@ class TicketTests(APITestCase):
         
         # Try to buy the ticket again (should succeed because previous reservation expired)
         response = self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 1}, format='json')
-        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
