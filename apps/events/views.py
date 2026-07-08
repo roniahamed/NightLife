@@ -196,70 +196,18 @@ class TicketPurchaseViewSet(viewsets.ModelViewSet):
         tier_id = request.data.get('ticket_tier_id')
         quantity = int(request.data.get('quantity', 1))
         
-        tier = get_object_or_404(EventTicketTier, pk=tier_id)
-        
-        if tier.sold_quantity + quantity > tier.total_quantity:
-            return error_response(message="Not enough tickets available.", status=status.HTTP_400_BAD_REQUEST)
-            
-        event = tier.event
-        venue = event.venue
-        
-        total_amount = tier.price * quantity
-        
-        # Calculate platform fee based on global Site Settings
-        from apps.common.models import PlatformSettings
-        settings_obj, _ = PlatformSettings.objects.get_or_create(id=1)
-        fee_percentage = settings_obj.ticket_commission_percentage
-        platform_fee = (total_amount * fee_percentage) / 100
-        
-        funds_transferred = False
-        
-        purchase = TicketPurchase.objects.create(
-            user=request.user,
-            event=event,
-            ticket_tier=tier,
-            quantity=quantity,
-            total_amount=total_amount,
-            platform_fee=platform_fee,
-            funds_transferred_to_venue=False
-        )
+        from .services import create_ticket_purchase, TicketPurchaseError
         
         try:
-            intent_kwargs = {
-                'amount': int(total_amount * 100),
-                'currency': 'usd',
-                'payment_method_types': ['card'],
-                'metadata': {
-                    'purchase_id': str(purchase.id),
-                    'user_id': str(request.user.id),
-                    'event_id': str(event.id)
-                }
-            }
-            
-            if venue.stripe_account_id:
-                intent_kwargs['application_fee_amount'] = int(platform_fee * 100)
-                intent_kwargs['transfer_data'] = {
-                    'destination': venue.stripe_account_id,
-                }
-                # Track that Stripe will auto-transfer this on success
-                purchase.funds_transferred_to_venue = True 
-                
-            # Create Stripe PaymentIntent
-            intent = stripe.PaymentIntent.create(**intent_kwargs)
-            
-            purchase.stripe_payment_intent_id = intent.id
-            purchase.save()
-            
+            purchase, client_secret = create_ticket_purchase(request.user, tier_id, quantity)
             return success_response(data={
-                'client_secret': intent.client_secret,
-                'purchase_id': purchase.id,
-                'total_amount': total_amount
-            }, status=status.HTTP_201_CREATED)
-            
-        except stripe.error.StripeError as e:
-            purchase.status = 'failed'
-            purchase.save()
+                "client_secret": client_secret,
+                "purchase_id": str(purchase.id)
+            })
+        except TicketPurchaseError as e:
             return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StripeWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -269,31 +217,7 @@ class StripeWebhookView(APIView):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
         
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-            )
-        except ValueError as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        except stripe.error.SignatureVerificationError as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-            
-        if event['type'] == 'payment_intent.succeeded':
-            payment_intent = event['data']['object']
-            purchase_id = payment_intent.get('metadata', {}).get('purchase_id')
-            
-            if purchase_id:
-                try:
-                    purchase = TicketPurchase.objects.get(id=purchase_id)
-                    purchase.status = 'completed'
-                    purchase.save()
-                    
-                    # Update sold quantity
-                    tier = purchase.ticket_tier
-                    tier.sold_quantity += purchase.quantity
-                    tier.save()
-                    
-                except TicketPurchase.DoesNotExist:
-                    pass
-                    
-        return Response(status=status.HTTP_200_OK)
+        from .services import handle_stripe_webhook_event
+        
+        status_code = handle_stripe_webhook_event(payload, sig_header)
+        return Response(status=status_code)

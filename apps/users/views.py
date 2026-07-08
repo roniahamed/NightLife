@@ -25,7 +25,7 @@ from .serializers import (
     UserBlockedSerializer, UserSettingsSerializer, CustomTokenObtainPairSerializer,
     SwitchProfileRequestSerializer, AvailableProfilesResponseSerializer
 )
-from .services import UserProfileService
+from .services import UserProfileService, AuthService, SocialConnectionService
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.utils import success_response, error_response
@@ -34,28 +34,6 @@ from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers as rf_serializers
 
 User = get_user_model()
-
-def generate_and_send_otp(user, otp_type='register'):
-    # Invalidate old OTPs of the same type
-    UserOTP.objects.filter(user=user, otp_type=otp_type, is_used=False).update(is_used=True)
-    
-    # Generate 4 digit OTP
-    otp = str(random.randint(1000, 9999))
-    otp_hash = make_password(otp)
-    expires_at = timezone.now() + timedelta(minutes=10)
-    
-    UserOTP.objects.create(user=user, otp_type=otp_type, otp_hash=otp_hash, expires_at=expires_at)
-    
-    subject = 'Your NightLife Verification Code' if otp_type == 'register' else 'NightLife Password Reset Code'
-    message = f'Your 4-digit verification code is: {otp}\nIt expires in 10 minutes.'
-    
-    send_mail(
-        subject=subject,
-        message=message,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@nightlife.local'),
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -68,7 +46,7 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            generate_and_send_otp(user, otp_type='register')
+            AuthService.generate_and_send_otp(user, otp_type='register')
             
             return success_response(
                 data={"email": user.email}, 
@@ -139,34 +117,16 @@ class VerifyOTPView(APIView):
         otp = serializer.validated_data['otp']
         
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return error_response(message="User not found.", status=status.HTTP_404_NOT_FOUND)
-            
-        otp_record = UserOTP.objects.filter(user=user, otp_type='register', is_used=False).order_by('-created_at').first()
-        
-        if not otp_record or not otp_record.is_valid():
-            return error_response(message="OTP expired or not found.", status=status.HTTP_400_BAD_REQUEST)
-            
-        if check_password(otp, otp_record.otp_hash):
-            otp_record.is_used = True
-            otp_record.save()
-            
-            user.is_email_verified = True
-            user.is_active = True
-            user.save()
-            
-            refresh = RefreshToken.for_user(user)
+            token_data = AuthService.verify_registration_otp(email, otp)
             return success_response(
-                data={
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                },
+                data=token_data,
                 message="Email verified and logged in successfully.",
                 status=status.HTTP_200_OK
             )
-        else:
-            return error_response(message="Invalid OTP.", status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            if str(e) == "User not found.":
+                return error_response(message=str(e), status=status.HTTP_404_NOT_FOUND)
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
 
 class ResendOTPView(APIView):
     permission_classes = (AllowAny,)
@@ -184,7 +144,7 @@ class ResendOTPView(APIView):
             if user.is_active:
                 return error_response(message="Account is already verified and active.", status=status.HTTP_400_BAD_REQUEST)
                 
-            generate_and_send_otp(user, otp_type='register')
+            AuthService.generate_and_send_otp(user, otp_type='register')
             return success_response(message="A new OTP has been sent to your email.")
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
@@ -196,12 +156,8 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            try:
-                user = User.objects.get(email=serializer.validated_data['email'])
-                generate_and_send_otp(user, otp_type='reset')
-                return success_response(message="If an account exists, an OTP was sent.")
-            except User.DoesNotExist:
-                return success_response(message="If an account exists, an OTP was sent.")
+            AuthService.request_password_reset_otp(serializer.validated_data['email'])
+            return success_response(message="If an account exists, an OTP was sent.")
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyResetOTPView(APIView):
@@ -213,27 +169,18 @@ class VerifyResetOTPView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             try:
-                user = User.objects.get(email=serializer.validated_data['email'])
-            except User.DoesNotExist:
-                return error_response(message="User not found.", status=status.HTTP_404_NOT_FOUND)
-                
-            otp_record = UserOTP.objects.filter(user=user, otp_type='reset', is_used=False).order_by('-created_at').first()
-            if not otp_record or not otp_record.is_valid():
-                return error_response(message="OTP expired or not found.", status=status.HTTP_400_BAD_REQUEST)
-                
-            if check_password(serializer.validated_data['otp'], otp_record.otp_hash):
-                otp_record.is_used = True
-                otp_record.save()
-                
-                # Generate token
-                token = default_token_generator.make_token(user)
-                
+                token = AuthService.verify_password_reset_otp(
+                    serializer.validated_data['email'], 
+                    serializer.validated_data['otp']
+                )
                 return success_response(
                     data={"token": token},
                     message="OTP verified. Use this token and your email to reset password."
                 )
-            else:
-                return error_response(message="Invalid OTP.", status=status.HTTP_400_BAD_REQUEST)
+            except ValueError as e:
+                if str(e) == "User not found.":
+                    return error_response(message=str(e), status=status.HTTP_404_NOT_FOUND)
+                return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class ResetPasswordView(APIView):
@@ -245,16 +192,16 @@ class ResetPasswordView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             try:
-                user = User.objects.get(email=serializer.validated_data['email'])
-            except User.DoesNotExist:
-                return error_response(message="User not found.", status=status.HTTP_404_NOT_FOUND)
-                
-            if default_token_generator.check_token(user, serializer.validated_data['token']):
-                user.set_password(serializer.validated_data['new_password'])
-                user.save()
+                AuthService.reset_password_with_token(
+                    serializer.validated_data['email'],
+                    serializer.validated_data['token'],
+                    serializer.validated_data['new_password']
+                )
                 return success_response(message="Password reset successfully.")
-            else:
-                return error_response(message="Invalid or expired token.", status=status.HTTP_400_BAD_REQUEST)
+            except ValueError as e:
+                if str(e) == "User not found.":
+                    return error_response(message=str(e), status=status.HTTP_404_NOT_FOUND)
+                return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordView(APIView):
@@ -265,12 +212,15 @@ class ChangePasswordView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            user = request.user
-            if not user.check_password(serializer.validated_data['old_password']):
-                return error_response(message="Incorrect old password.", status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(serializer.validated_data['new_password'])
-            user.save()
-            return success_response(message="Password changed successfully.")
+            try:
+                AuthService.change_password(
+                    request.user,
+                    serializer.validated_data['old_password'],
+                    serializer.validated_data['new_password']
+                )
+                return success_response(message="Password changed successfully.")
+            except ValueError as e:
+                return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -393,22 +343,12 @@ class BlockUserView(APIView):
         responses={200: OpenApiTypes.OBJECT}
     )
     def post(self, request, username):
-        if request.user.username == username:
-            return error_response(message="You cannot block yourself.", status=status.HTTP_400_BAD_REQUEST)
-        
-        target_user = get_object_or_404(User, username=username)
-
-        block, created = UserBlock.objects.get_or_create(blocker=request.user, blocked=target_user)
-        
-        if not created:
-            block.delete()
-            return success_response(message="Unblocked successfully.")
-        
-        # If blocked, also unfollow each other
-        UserFollow.objects.filter(follower=request.user, following=target_user).delete()
-        UserFollow.objects.filter(follower=target_user, following=request.user).delete()
-
-        return success_response(message="Blocked successfully.")
+        try:
+            blocked = SocialConnectionService.toggle_block(request.user, username)
+            message = "Blocked successfully." if blocked else "Unblocked successfully."
+            return success_response(message=message)
+        except ValueError as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
 
 class ReportUserView(generics.CreateAPIView):
     permission_classes = (IsAuthenticated, IsActiveProfileUser)

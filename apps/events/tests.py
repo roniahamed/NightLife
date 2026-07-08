@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
@@ -24,7 +25,9 @@ class EventTests(APITestCase):
         self.venue = Venue.objects.create(
             owner=self.venue_user,
             name='Test Club',
-            is_approved=True
+            is_approved=True,
+            stripe_account_id='acct_test123',
+            stripe_account_status='active'
         )
         
         # User 2 - Regular User
@@ -78,17 +81,17 @@ class EventTests(APITestCase):
         
         # RSVP Going
         response = self.client.post(url, {'status': 'going'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='going').exists())
         
         # RSVP Interested
         response = self.client.post(url, {'status': 'interested'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='interested').exists())
         
         # Remove RSVP
         response = self.client.post(url, {'status': 'remove'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(EventRSVP.objects.filter(user=self.regular_user, event=event).exists())
 
 
@@ -176,7 +179,7 @@ class TicketTests(APITestCase):
             'quantity': 1
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(TicketPurchase.objects.count(), 1)
         
         purchase = TicketPurchase.objects.first()
@@ -227,12 +230,66 @@ class TicketTests(APITestCase):
             'quantity': 2
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(TicketPurchase.objects.count(), 1)
         
         purchase = TicketPurchase.objects.first()
         self.assertEqual(purchase.quantity, 2)
         self.assertEqual(purchase.total_amount, 100.00)
-        self.assertEqual(purchase.platform_fee, 10.00) # Assuming 10%
+        self.assertEqual(purchase.platform_fee, Decimal('3.00')) # Default is 3%
         self.assertEqual(purchase.stripe_payment_intent_id, 'pi_test123')
         self.assertEqual(purchase.status, 'pending')
+
+    @patch('stripe.PaymentIntent.create')
+    def test_purchase_ticket_insufficient_quantity(self, mock_stripe_create):
+        mock_stripe_create.return_value = type('obj', (object,), {
+            'id': 'pi_test123',
+            'client_secret': 'secret_test123'
+        })
+        
+        tier = EventTicketTier.objects.create(
+            event=self.event,
+            name='General',
+            price='50.00',
+            total_quantity=2
+        )
+        
+        self.client.force_authenticate(user=self.regular_user)
+        url = reverse('ticket-purchases-list')
+        
+        # Buy 1 ticket (should succeed)
+        response1 = self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 1}, format='json')
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        
+        # Try to buy 2 more tickets (should fail, only 1 left)
+        response2 = self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 2}, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+        
+    @patch('stripe.PaymentIntent.create')
+    def test_purchase_ticket_reservation_expiration(self, mock_stripe_create):
+        mock_stripe_create.return_value = type('obj', (object,), {
+            'id': 'pi_test123',
+            'client_secret': 'secret_test123'
+        })
+        
+        tier = EventTicketTier.objects.create(
+            event=self.event,
+            name='General',
+            price='50.00',
+            total_quantity=1
+        )
+        
+        self.client.force_authenticate(user=self.regular_user)
+        url = reverse('ticket-purchases-list')
+        
+        # Buy 1 ticket
+        self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 1}, format='json')
+        
+        # Manually backdate the created_at of the pending purchase to 6 minutes ago
+        purchase = TicketPurchase.objects.first()
+        purchase.created_at = timezone.now() - datetime.timedelta(minutes=6)
+        purchase.save()
+        
+        # Try to buy the ticket again (should succeed because previous reservation expired)
+        response = self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 1}, format='json')
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)

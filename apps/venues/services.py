@@ -110,8 +110,71 @@ def _update_venue_rating_stats(venue):
     )
     
     stats.average_rating = aggregate['avg_rating'] or 0.00
-    stats.total_reviews = venue.reviews.count()
+    stats.total_favorites = venue.followers.count()
     stats.save()
+
+def get_dashboard_stats(venue):
+    from apps.events.models import TicketPurchase, Event
+    from django.db.models import Sum
+    from apps.events.serializers import TicketPurchaseSerializer
+    import stripe
+    
+    purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
+    
+    total_tickets_sold = purchases.aggregate(total=Sum('quantity'))['total'] or 0
+    total_revenue = purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+    platform_fees = purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
+    net_earnings = total_revenue - platform_fees
+    
+    active_events_count = Event.objects.filter(venue=venue, is_active=True).count()
+    recent_transactions = purchases.order_by('-created_at')[:5]
+    
+    stripe_available_balance = 0.0
+    stripe_pending_balance = 0.0
+    
+    if venue.stripe_account_id and venue.stripe_account_status == 'active':
+        try:
+            balance = stripe.Balance.retrieve(stripe_account=venue.stripe_account_id)
+            stripe_available_balance = sum(b.amount for b in balance.available) / 100.0
+            stripe_pending_balance = sum(b.amount for b in balance.pending) / 100.0
+        except stripe.error.StripeError:
+            pass
+            
+    return {
+        "total_tickets_sold": total_tickets_sold,
+        "total_revenue": float(total_revenue),
+        "platform_fees_paid": float(platform_fees),
+        "net_earnings": float(net_earnings),
+        "stripe_available_balance": stripe_available_balance,
+        "stripe_pending_balance": stripe_pending_balance,
+        "active_events_count": active_events_count,
+        "recent_transactions": TicketPurchaseSerializer(recent_transactions, many=True).data
+    }
+
+def create_stripe_onboarding(venue, refresh_url, return_url):
+    import stripe
+    
+    # Create Stripe Account if not exists or if previously disconnected
+    if not venue.stripe_account_id or venue.stripe_account_status == 'disconnected':
+        account = stripe.Account.create(
+            type="express",
+            email=venue.owner.email,
+            business_type="company",
+            company={"name": venue.name},
+        )
+        venue.stripe_account_id = account.id
+        venue.stripe_account_status = 'pending'
+        venue.save()
+    
+    # Create Account Link
+    account_link = stripe.AccountLink.create(
+        account=venue.stripe_account_id,
+        refresh_url=refresh_url,
+        return_url=return_url,
+        type="account_onboarding",
+    )
+    
+    return account_link.url
 
 def increment_venue_view(venue):
     """

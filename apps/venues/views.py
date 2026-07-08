@@ -136,28 +136,11 @@ class VenueViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsActiveProfileVenue])
     def dashboard(self, request):
         venue = request.user.venue_profile
-        from apps.events.models import TicketPurchase, Event
-        from django.db.models import Sum
-        from apps.events.serializers import TicketPurchaseSerializer
         
-        purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
+        from .services import get_dashboard_stats
         
-        total_tickets_sold = purchases.aggregate(total=Sum('quantity'))['total'] or 0
-        total_revenue = purchases.aggregate(total=Sum('total_amount'))['total'] or 0
-        platform_fees = purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
-        net_earnings = total_revenue - platform_fees
-        
-        active_events_count = Event.objects.filter(venue=venue, is_active=True).count()
-        recent_transactions = purchases.order_by('-created_at')[:5]
-        
-        return success_response(data={
-            "total_tickets_sold": total_tickets_sold,
-            "total_revenue": float(total_revenue),
-            "platform_fees_paid": float(platform_fees),
-            "net_earnings": float(net_earnings),
-            "active_events_count": active_events_count,
-            "recent_transactions": TicketPurchaseSerializer(recent_transactions, many=True).data
-        })
+        data = get_dashboard_stats(venue)
+        return success_response(data=data)
 
 
 
@@ -258,29 +241,19 @@ class VenueStripeOnboardingView(APIView):
             
         venue = user.venue_profile
         
+        from .services import create_stripe_onboarding
+        
         try:
-            # Create Stripe Account if not exists
-            if not venue.stripe_account_id:
-                account = stripe.Account.create(
-                    type="express",
-                    email=venue.owner.email,
-                    business_type="company",
-                    company={"name": venue.name},
-                )
-                venue.stripe_account_id = account.id
-                venue.save()
+            refresh_url = request.build_absolute_uri('/api/venues/stripe/onboard/refresh/')
+            return_url = request.build_absolute_uri('/api/venues/stripe/onboard/return/')
             
-            # Create Account Link
-            account_link = stripe.AccountLink.create(
-                account=venue.stripe_account_id,
-                refresh_url=request.build_absolute_uri('/api/venues/stripe/onboard/refresh/'),
-                return_url=request.build_absolute_uri('/api/venues/stripe/onboard/return/'),
-                type="account_onboarding",
-            )
+            url = create_stripe_onboarding(venue, refresh_url, return_url)
             
-            return success_response(data={"url": account_link.url})
+            return success_response(data={
+                "url": url
+            })
         except Exception as e:
-            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VenueStripeOnboardingReturnView(APIView):
     permission_classes = [IsAuthenticated, IsActiveProfileVenue]

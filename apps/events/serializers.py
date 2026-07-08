@@ -18,10 +18,27 @@ class EventRSVPSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'event', 'user', 'created_at']
 
 class EventTicketTierSerializer(serializers.ModelSerializer):
+    available_quantity = serializers.SerializerMethodField(read_only=True)
+    
     class Meta:
         model = EventTicketTier
-        fields = ['id', 'event', 'name', 'price', 'total_quantity', 'sold_quantity', 'description', 'created_at']
+        fields = ['id', 'event', 'name', 'price', 'total_quantity', 'sold_quantity', 'available_quantity', 'description', 'created_at']
         read_only_fields = ['id', 'event', 'sold_quantity', 'created_at']
+        
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_available_quantity(self, obj):
+        from django.db.models import Sum
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        active_pending_quantity = TicketPurchase.objects.filter(
+            ticket_tier=obj,
+            status='pending',
+            created_at__gte=timezone.now() - timedelta(minutes=5)
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+        
+        available = obj.total_quantity - obj.sold_quantity - active_pending_quantity
+        return max(0, available)
 
 class EventLineupSerializer(serializers.ModelSerializer):
     class Meta:

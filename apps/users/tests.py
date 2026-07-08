@@ -45,14 +45,14 @@ class UserModuleTests(APITestCase):
     def test_profile_retrieve(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(reverse('profile'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'user1@example.com')
 
     def test_profile_update(self):
         self.client.force_authenticate(user=self.user1)
         data = {'first_name': 'Updated', 'bio': 'New bio'}
         response = self.client.patch(reverse('profile'), data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user1.refresh_from_db()
         self.assertEqual(self.user1.first_name, 'Updated')
         self.assertEqual(self.user1.bio, 'New bio')
@@ -60,25 +60,25 @@ class UserModuleTests(APITestCase):
     def test_public_profile(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(reverse('public-profile', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['data']['username'], 'user2')
 
     def test_follow_user(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.post(reverse('follow-user', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(UserFollow.objects.filter(follower=self.user1, following=self.user2).exists())
         
         # Test Unfollow
         response = self.client.post(reverse('follow-user', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(UserFollow.objects.filter(follower=self.user1, following=self.user2).exists())
 
     def test_followers_list(self):
         UserFollow.objects.create(follower=self.user1, following=self.user2)
         self.client.force_authenticate(user=self.user2)
         response = self.client.get(reverse('followers-list', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['follower_username'], 'user1')
 
@@ -86,14 +86,14 @@ class UserModuleTests(APITestCase):
         UserFollow.objects.create(follower=self.user1, following=self.user2)
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(reverse('following-list', kwargs={'username': self.user1.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['following_username'], 'user2')
 
     def test_block_user(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.post(reverse('block-user', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(UserBlock.objects.filter(blocker=self.user1, blocked=self.user2).exists())
         
         # After blocking, user1 shouldn't be able to follow user2
@@ -102,14 +102,14 @@ class UserModuleTests(APITestCase):
         
         # Test Unblock
         response = self.client.post(reverse('block-user', kwargs={'username': self.user2.username}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(UserBlock.objects.filter(blocker=self.user1, blocked=self.user2).exists())
 
     def test_blocked_users_list(self):
         UserBlock.objects.create(blocker=self.user1, blocked=self.user2)
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(reverse('blocked-users-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['blocked_username'], 'user2')
 
@@ -123,7 +123,7 @@ class UserModuleTests(APITestCase):
     def test_user_settings_retrieve(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(reverse('user-settings'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['is_activity_status_visible'])
         self.assertFalse(response.data['notify_sms'])
 
@@ -131,7 +131,7 @@ class UserModuleTests(APITestCase):
         self.client.force_authenticate(user=self.user1)
         data = {'is_activity_status_visible': False, 'notify_sms': True}
         response = self.client.patch(reverse('user-settings'), data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['is_activity_status_visible'])
         self.assertTrue(response.data['notify_sms'])
         
@@ -144,10 +144,10 @@ class UserModuleTests(APITestCase):
         self.user1.registration_type = 'venue'
         self.user1.save()
         from apps.venues.models import Venue
-        Venue.objects.create(owner=self.user1, name='My Club', is_approved=True)
+        venue = Venue.objects.create(owner=self.user1, name='My Club', is_approved=True)
 
         self.client.force_authenticate(user=self.user1)
-        response = self.client.post(reverse('switch-profile'), {'profile': 'venue'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(reverse('switch-profile'), {'profile': 'venue', 'profile_id': str(venue.id)}, format='json')
+        print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['data']['active_profile'], 'venue')
         self.assertIn('access', response.data['data'])

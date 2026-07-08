@@ -146,3 +146,14 @@ class TicketPurchase(models.Model):
 
     def __str__(self):
         return f"Purchase {self.id} by {self.user}"
+
+class StripeWebhookEvent(models.Model):
+    stripe_event_id = models.CharField(max_length=255, primary_key=True)
+    type = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.type} - {self.stripe_event_id}"
