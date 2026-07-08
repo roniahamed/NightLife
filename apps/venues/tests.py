@@ -86,7 +86,12 @@ class VenueTests(APITestCase):
         self.assertEqual(venue.statistic.total_views, 1)
 
     def test_follow_unfollow_venue(self):
-        venue = Venue.objects.create(owner=self.user, name='Followable Venue')
+        venue = Venue.objects.create(
+            owner=self.user,
+            name='Test Venue 2',
+            is_approved=True
+        )
+        
         # Stats creation happens in service on creation, manually add
         from .models import VenueStatistic
         VenueStatistic.objects.create(venue=venue)
@@ -176,3 +181,44 @@ class VenueCategoryTests(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 2)
+
+from unittest.mock import patch
+
+class StripeVenueTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email='owner@test.com', password='pw', username='u')
+        self.venue = Venue.objects.create(
+            owner=self.user,
+            name='My Venue',
+            is_approved=True,
+            stripe_account_id='acct_test123',
+            stripe_account_status='active'
+        )
+        self.user.registration_type = 'venue'
+        self.user.save()
+        
+        self.client.force_authenticate(user=self.user)
+
+    @patch('stripe.Account.create_login_link')
+    def test_dashboard_link_success(self, mock_create_link):
+        mock_create_link.return_value.url = 'https://connect.stripe.com/express/test'
+        
+        url = reverse('venue-stripe-dashboard')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.data['data']['url'], 'https://connect.stripe.com/express/test')
+        mock_create_link.assert_called_once_with('acct_test123')
+
+    def test_dashboard_link_no_stripe_account(self):
+        self.venue.stripe_account_id = None
+        self.venue.save()
+        
+        url = reverse('venue-stripe-dashboard')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['status'], 'error')
+        self.assertIn("Venue must have an active Stripe account", response.data['message'])
+

@@ -110,7 +110,8 @@ def _update_venue_rating_stats(venue):
     )
     
     stats.average_rating = aggregate['avg_rating'] or 0.00
-    stats.total_favorites = venue.followers.count()
+    stats.total_reviews = venue.reviews.count()
+    stats.followers_count = venue.followers.count()
     stats.save()
 
 def get_dashboard_stats(venue):

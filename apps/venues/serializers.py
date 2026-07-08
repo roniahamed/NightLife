@@ -113,7 +113,7 @@ class VenueSerializer(serializers.ModelSerializer):
     def get_is_following(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.venue_follows.filter(user=request.user).exists()
+            return obj.followers.filter(user=request.user).exists()
         return False
         
     def get_is_stripe_connected(self, obj):
