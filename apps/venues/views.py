@@ -9,7 +9,7 @@ from django.contrib.gis.db.models.functions import Distance
 from .models import Venue, Amenity, VenueCategory, VenueGallery, VenueOperatingHour, VenueReview
 from .serializers import (
     VenueSerializer, AmenitySerializer, VenueCategorySerializer, VenueGallerySerializer,
-    VenueOperatingHourSerializer, VenueReviewSerializer
+    VenueOperatingHourSerializer, VenueReviewSerializer, DashboardAnalyticsSerializer
 )
 from . import services
 import stripe
@@ -132,7 +132,7 @@ class VenueViewSet(viewsets.ModelViewSet):
         services.unfollow_venue(request.user, venue)
         return Response({"status": "unfollowed venue"}, status=status.HTTP_200_OK)
 
-    @extend_schema(summary="Venue Dashboard", description="Get earnings and ticket stats for the logged-in venue.", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Venues'])
+    @extend_schema(summary="Venue Dashboard", description="Get earnings and ticket stats for the logged-in venue.", request=None, responses={200: DashboardAnalyticsSerializer}, tags=['Venues'])
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsActiveProfileVenue])
     def dashboard(self, request):
         venue = request.user.venue_profile
@@ -268,6 +268,13 @@ class VenueStripeOnboardingReturnView(APIView):
         try:
             account = stripe.Account.retrieve(venue.stripe_account_id)
             if account.details_submitted:
+                # Proactively update status so we don't strictly rely on webhook delay
+                if account.charges_enabled:
+                    venue.stripe_account_status = 'active'
+                else:
+                    venue.stripe_account_status = 'restricted'
+                venue.save()
+                
                 # Release held funds
                 from apps.events.models import TicketPurchase
                 held_purchases = TicketPurchase.objects.filter(
@@ -289,6 +296,7 @@ class VenueStripeOnboardingReturnView(APIView):
                     purchase.funds_transferred_to_venue = True
                     purchase.save()
                     total_transferred += amount_to_transfer
+                    
                     
                 return success_response(message=f"Onboarding successful. Released ${total_transferred} in held funds.")
             else:

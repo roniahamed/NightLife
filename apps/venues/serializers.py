@@ -118,3 +118,33 @@ class VenueSerializer(serializers.ModelSerializer):
         
     def get_is_stripe_connected(self, obj):
         return bool(obj.stripe_account_id)
+
+class DashboardChartDataSerializer(serializers.Serializer):
+    day = serializers.CharField()
+    revenue = serializers.FloatField()
+
+class DashboardRecentActivitySerializer(serializers.Serializer):
+    type = serializers.CharField()
+    message = serializers.CharField()
+    time = serializers.DateTimeField()
+    icon = serializers.CharField()
+
+class DashboardAnalyticsSerializer(serializers.Serializer):
+    revenue_this_week = serializers.FloatField()
+    revenue_percentage_change = serializers.FloatField()
+    total_followers = serializers.IntegerField()
+    new_followers_this_week = serializers.IntegerField()
+    tickets_sold_this_week = serializers.IntegerField()
+    tickets_sold_percentage_change = serializers.FloatField()
+    heat_score = serializers.IntegerField()
+    revenue_chart_data = DashboardChartDataSerializer(many=True)
+    recent_activity = DashboardRecentActivitySerializer(many=True)
+    
+    total_tickets_sold = serializers.IntegerField()
+    total_revenue = serializers.FloatField()
+    platform_fees_paid = serializers.FloatField()
+    net_earnings = serializers.FloatField()
+    stripe_available_balance = serializers.FloatField()
+    stripe_pending_balance = serializers.FloatField()
+    active_events_count = serializers.IntegerField()
+    recent_transactions = serializers.ListField(child=serializers.DictField())

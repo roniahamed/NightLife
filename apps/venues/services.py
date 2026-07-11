@@ -118,17 +118,110 @@ def get_dashboard_stats(venue):
     from apps.events.models import TicketPurchase, Event
     from django.db.models import Sum
     from apps.events.serializers import TicketPurchaseSerializer
+    from django.utils import timezone
+    from datetime import timedelta
     import stripe
     
-    purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
+    now = timezone.now()
+    one_week_ago = now - timedelta(days=7)
+    two_weeks_ago = now - timedelta(days=14)
     
-    total_tickets_sold = purchases.aggregate(total=Sum('quantity'))['total'] or 0
-    total_revenue = purchases.aggregate(total=Sum('total_amount'))['total'] or 0
-    platform_fees = purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
-    net_earnings = total_revenue - platform_fees
+    # 1. Revenue This Week & Change
+    purchases_this_week = TicketPurchase.objects.filter(event__venue=venue, status='completed', created_at__gte=one_week_ago)
+    purchases_last_week = TicketPurchase.objects.filter(event__venue=venue, status='completed', created_at__gte=two_weeks_ago, created_at__lt=one_week_ago)
+    
+    agg_this_week = purchases_this_week.aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
+    revenue_this_week = (agg_this_week['gross'] or 0) - (agg_this_week['fees'] or 0)
+    
+    agg_last_week = purchases_last_week.aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
+    revenue_last_week = (agg_last_week['gross'] or 0) - (agg_last_week['fees'] or 0)
+    
+    if revenue_last_week > 0:
+        revenue_change = float(((revenue_this_week - revenue_last_week) / revenue_last_week) * 100)
+    else:
+        revenue_change = 100.0 if revenue_this_week > 0 else 0.0
+        
+    # 2. Total Followers & Change
+    total_followers = venue.statistic.followers_count if hasattr(venue, 'statistic') else venue.followers.count()
+    followers_this_week = VenueFollow.objects.filter(venue=venue, created_at__gte=one_week_ago).count()
+    
+    new_followers_this_week = followers_this_week
+    
+    # 3. Tickets Sold & Change
+    tickets_this_week = purchases_this_week.aggregate(total=Sum('quantity'))['total'] or 0
+    tickets_last_week = purchases_last_week.aggregate(total=Sum('quantity'))['total'] or 0
+    
+    if tickets_last_week > 0:
+        tickets_change = float(((tickets_this_week - tickets_last_week) / tickets_last_week) * 100)
+    else:
+        tickets_change = 100.0 if tickets_this_week > 0 else 0.0
+        
+    # 4. Heat Score
+    heat_score = venue.statistic.heat_score if hasattr(venue, 'statistic') else 0
+    
+    # 5. Revenue Chart Data (Last 7 days)
+    chart_data = []
+    for i in range(6, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        agg = TicketPurchase.objects.filter(
+            event__venue=venue, 
+            status='completed', 
+            created_at__gte=day_start, 
+            created_at__lt=day_end
+        ).aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
+        
+        gross = agg['gross'] or 0
+        fees = agg['fees'] or 0
+        day_revenue = gross - fees
+        
+        chart_data.append({
+            'day': day_start.strftime('%a'),
+            'revenue': float(day_revenue)
+        })
+        
+    # 6. Recent Activity
+    recent_activities = []
+    
+    recent_followers = VenueFollow.objects.filter(venue=venue, created_at__gte=one_week_ago).order_by('-created_at')[:5]
+    for f in recent_followers:
+        recent_activities.append({
+            'type': 'follower',
+            'message': f'New follower milestone: {total_followers} followers!' if total_followers > 0 and total_followers % 100 == 0 else f'New follower: {f.user.username}',
+            'time': f.created_at,
+            'icon': 'user'
+        })
+        
+    recent_purchases = purchases_this_week.order_by('-created_at')[:5]
+    for p in recent_purchases:
+        recent_activities.append({
+            'type': 'ticket',
+            'message': f'{p.quantity} new tickets sold for {p.event.title} event',
+            'time': p.created_at,
+            'icon': 'ticket'
+        })
+        
+    recent_reviews = VenueReview.objects.filter(venue=venue, created_at__gte=one_week_ago).order_by('-created_at')[:5]
+    for r in recent_reviews:
+        recent_activities.append({
+            'type': 'review',
+            'message': f'New {r.rating}-star review from {r.user.username}',
+            'time': r.created_at,
+            'icon': 'star'
+        })
+        
+    recent_activities.sort(key=lambda x: x['time'], reverse=True)
+    recent_activities = recent_activities[:10]
+    
+    # Original Data for backward compatibility
+    all_purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
+    total_tickets_sold = all_purchases.aggregate(total=Sum('quantity'))['total'] or 0
+    total_revenue_all = all_purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+    platform_fees = all_purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
+    net_earnings = total_revenue_all - platform_fees
     
     active_events_count = Event.objects.filter(venue=venue, is_active=True).count()
-    recent_transactions = purchases.order_by('-created_at')[:5]
+    recent_transactions = all_purchases.order_by('-created_at')[:5]
     
     stripe_available_balance = 0.0
     stripe_pending_balance = 0.0
@@ -142,8 +235,25 @@ def get_dashboard_stats(venue):
             pass
             
     return {
+        # Dashboard UI requirements
+        "revenue_this_week": float(revenue_this_week),
+        "revenue_percentage_change": round(revenue_change, 1),
+        "total_followers": total_followers,
+        "new_followers_this_week": new_followers_this_week,
+        "tickets_sold_this_week": tickets_this_week,
+        "tickets_sold_percentage_change": round(tickets_change, 1),
+        "heat_score": heat_score,
+        "revenue_chart_data": chart_data,
+        "recent_activity": [{
+            'type': activity['type'],
+            'message': activity['message'],
+            'time': activity['time'].isoformat(),
+            'icon': activity['icon']
+        } for activity in recent_activities],
+        
+        # Original fields
         "total_tickets_sold": total_tickets_sold,
-        "total_revenue": float(total_revenue),
+        "total_revenue": float(total_revenue_all),
         "platform_fees_paid": float(platform_fees),
         "net_earnings": float(net_earnings),
         "stripe_available_balance": stripe_available_balance,
