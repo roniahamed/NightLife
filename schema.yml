@@ -141,7 +141,7 @@ paths:
         schema:
           type: string
       tags:
-      - events
+      - Events
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -156,18 +156,18 @@ paths:
     post:
       operationId: events_create
       tags:
-      - events
+      - Events
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
         required: true
       security:
       - jwtAuth: []
@@ -179,6 +179,205 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
           description: ''
+  /api/events/{event_pk}/lineups/:
+    get:
+      operationId: events_lineups_list
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventLineupList'
+          description: ''
+    post:
+      operationId: events_lineups_create
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+  /api/events/{event_pk}/lineups/{id}/:
+    get:
+      operationId: events_lineups_retrieve
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    put:
+      operationId: events_lineups_update
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    patch:
+      operationId: events_lineups_partial_update
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    delete:
+      operationId: events_lineups_destroy
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/events/{event_pk}/tickets/:
     get:
       operationId: events_tickets_list
@@ -213,7 +412,7 @@ paths:
         schema:
           type: string
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -234,18 +433,18 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
         required: true
       security:
       - jwtAuth: []
@@ -272,7 +471,7 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -298,18 +497,18 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EventTicketTier'
+              $ref: '#/components/schemas/EventTicketTierRequest'
         required: true
       security:
       - jwtAuth: []
@@ -335,18 +534,18 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedEventTicketTier'
+              $ref: '#/components/schemas/PatchedEventTicketTierRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedEventTicketTier'
+              $ref: '#/components/schemas/PatchedEventTicketTierRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedEventTicketTier'
+              $ref: '#/components/schemas/PatchedEventTicketTierRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -371,7 +570,7 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -390,7 +589,7 @@ paths:
         description: A UUID string identifying this event.
         required: true
       tags:
-      - events
+      - Events
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -413,18 +612,18 @@ paths:
         description: A UUID string identifying this event.
         required: true
       tags:
-      - events
+      - Events
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/EventRequest'
         required: true
       security:
       - jwtAuth: []
@@ -447,18 +646,18 @@ paths:
         description: A UUID string identifying this event.
         required: true
       tags:
-      - events
+      - Events
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedEvent'
+              $ref: '#/components/schemas/PatchedEventRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedEvent'
+              $ref: '#/components/schemas/PatchedEventRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedEvent'
+              $ref: '#/components/schemas/PatchedEventRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -480,7 +679,7 @@ paths:
         description: A UUID string identifying this event.
         required: true
       tags:
-      - events
+      - Events
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -505,13 +704,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventRSVPRequest'
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EventRSVPRequest'
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EventRSVPRequest'
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -553,7 +752,7 @@ paths:
         schema:
           type: string
       tags:
-      - events
+      - Event Categories
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -577,7 +776,7 @@ paths:
         description: A UUID string identifying this event category.
         required: true
       tags:
-      - events
+      - Event Categories
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -618,7 +817,7 @@ paths:
         schema:
           type: string
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -634,18 +833,18 @@ paths:
       description: Creates a Stripe Payment Intent to purchase a ticket.
       summary: Purchase Ticket
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -666,7 +865,7 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -686,18 +885,18 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TicketPurchase'
+              $ref: '#/components/schemas/TicketPurchaseRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -717,18 +916,18 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedTicketPurchase'
+              $ref: '#/components/schemas/PatchedTicketPurchaseRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedTicketPurchase'
+              $ref: '#/components/schemas/PatchedTicketPurchaseRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedTicketPurchase'
+              $ref: '#/components/schemas/PatchedTicketPurchaseRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -748,7 +947,7 @@ paths:
           type: string
         required: true
       tags:
-      - events
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -761,7 +960,7 @@ paths:
       description: Webhook handler for Stripe payment events.
       summary: Stripe Webhook
       tags:
-      - events
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -823,13 +1022,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -880,13 +1079,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -913,13 +1112,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedPost'
+              $ref: '#/components/schemas/PatchedPostRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedPost'
+              $ref: '#/components/schemas/PatchedPostRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedPost'
+              $ref: '#/components/schemas/PatchedPostRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -965,13 +1164,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -999,13 +1198,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Post'
+              $ref: '#/components/schemas/PostRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1078,13 +1277,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1148,13 +1347,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Comment'
+              $ref: '#/components/schemas/CommentRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1188,13 +1387,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedComment'
+              $ref: '#/components/schemas/PatchedCommentRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedComment'
+              $ref: '#/components/schemas/PatchedCommentRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedComment'
+              $ref: '#/components/schemas/PatchedCommentRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1278,13 +1477,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Story'
+              $ref: '#/components/schemas/StoryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Story'
+              $ref: '#/components/schemas/StoryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Story'
+              $ref: '#/components/schemas/StoryRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1305,10 +1504,10 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MediaUpload'
+              $ref: '#/components/schemas/MediaUploadRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/MediaUpload'
+              $ref: '#/components/schemas/MediaUploadRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1497,13 +1696,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserReport'
+              $ref: '#/components/schemas/UserReportRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/UserReport'
+              $ref: '#/components/schemas/UserReportRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserReport'
+              $ref: '#/components/schemas/UserReportRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1585,21 +1784,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CustomTokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CustomTokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CustomTokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
         required: true
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CustomTokenObtainPair'
-          description: ''
+          description: No response body
   /api/users/login/refresh/:
     post:
       operationId: users_login_refresh_create
@@ -1612,13 +1807,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
         required: true
       responses:
         '200':
@@ -1638,13 +1833,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/ChangePasswordRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/ChangePasswordRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/ChangePasswordRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1667,13 +1862,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ForgotPassword'
+              $ref: '#/components/schemas/ForgotPasswordRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ForgotPassword'
+              $ref: '#/components/schemas/ForgotPasswordRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ForgotPassword'
+              $ref: '#/components/schemas/ForgotPasswordRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1697,13 +1892,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetPassword'
+              $ref: '#/components/schemas/ResetPasswordRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ResetPassword'
+              $ref: '#/components/schemas/ResetPasswordRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ResetPassword'
+              $ref: '#/components/schemas/ResetPasswordRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1727,13 +1922,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VerifyResetOTP'
+              $ref: '#/components/schemas/VerifyResetOTPRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VerifyResetOTP'
+              $ref: '#/components/schemas/VerifyResetOTPRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VerifyResetOTP'
+              $ref: '#/components/schemas/VerifyResetOTPRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1774,13 +1969,13 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Profile'
+              $ref: '#/components/schemas/ProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Profile'
+              $ref: '#/components/schemas/ProfileRequest'
           application/json:
             schema:
-              $ref: '#/components/schemas/Profile'
+              $ref: '#/components/schemas/ProfileRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1801,13 +1996,13 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1825,15 +2020,15 @@ paths:
       - users
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Register'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Register'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1858,13 +2053,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResendOTP'
+              $ref: '#/components/schemas/ResendOTPRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ResendOTP'
+              $ref: '#/components/schemas/ResendOTPRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ResendOTP'
+              $ref: '#/components/schemas/ResendOTPRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1904,13 +2099,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserSettings'
+              $ref: '#/components/schemas/UserSettingsRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/UserSettings'
+              $ref: '#/components/schemas/UserSettingsRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserSettings'
+              $ref: '#/components/schemas/UserSettingsRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1930,13 +2125,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedUserSettings'
+              $ref: '#/components/schemas/PatchedUserSettingsRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedUserSettings'
+              $ref: '#/components/schemas/PatchedUserSettingsRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedUserSettings'
+              $ref: '#/components/schemas/PatchedUserSettingsRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1960,13 +2155,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SwitchProfileRequest'
+              $ref: '#/components/schemas/SwitchProfileRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/SwitchProfileRequest'
+              $ref: '#/components/schemas/SwitchProfileRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/SwitchProfileRequest'
+              $ref: '#/components/schemas/SwitchProfileRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1990,13 +2185,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VerifyOTP'
+              $ref: '#/components/schemas/VerifyOTPRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VerifyOTP'
+              $ref: '#/components/schemas/VerifyOTPRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VerifyOTP'
+              $ref: '#/components/schemas/VerifyOTPRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2038,7 +2233,7 @@ paths:
         schema:
           type: string
       tags:
-      - venues
+      - Venues
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2053,18 +2248,18 @@ paths:
     post:
       operationId: venues_create
       tags:
-      - venues
+      - Venues
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Venue'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Venue'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Venue'
+              $ref: '#/components/schemas/VenueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2088,7 +2283,7 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2111,18 +2306,18 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Venue'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Venue'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Venue'
+              $ref: '#/components/schemas/VenueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2145,18 +2340,18 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedVenue'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedVenue'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedVenue'
+              $ref: '#/components/schemas/PatchedVenueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVenueRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVenueRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2178,7 +2373,7 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2197,18 +2392,18 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Venue'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Venue'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Venue'
+              $ref: '#/components/schemas/VenueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2232,18 +2427,18 @@ paths:
         description: A UUID string identifying this venue.
         required: true
       tags:
-      - venues
+      - Venues
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Venue'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Venue'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Venue'
+              $ref: '#/components/schemas/VenueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2290,7 +2485,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2312,18 +2507,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2352,7 +2547,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2380,18 +2575,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueGallery'
+              $ref: '#/components/schemas/VenueGalleryRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2419,18 +2614,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedVenueGallery'
+              $ref: '#/components/schemas/PatchedVenueGalleryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedVenueGallery'
+              $ref: '#/components/schemas/PatchedVenueGalleryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedVenueGallery'
+              $ref: '#/components/schemas/PatchedVenueGalleryRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2457,7 +2652,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2499,7 +2694,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2521,18 +2716,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2561,7 +2756,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2589,18 +2784,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2628,18 +2823,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedVenueOperatingHour'
+              $ref: '#/components/schemas/PatchedVenueOperatingHourRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedVenueOperatingHour'
+              $ref: '#/components/schemas/PatchedVenueOperatingHourRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedVenueOperatingHour'
+              $ref: '#/components/schemas/PatchedVenueOperatingHourRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2666,7 +2861,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2684,18 +2879,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueOperatingHour'
+              $ref: '#/components/schemas/VenueOperatingHourRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2742,7 +2937,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2764,18 +2959,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2804,7 +2999,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2832,18 +3027,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueReview'
+              $ref: '#/components/schemas/VenueReviewRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2871,18 +3066,18 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedVenueReview'
+              $ref: '#/components/schemas/PatchedVenueReviewRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedVenueReview'
+              $ref: '#/components/schemas/PatchedVenueReviewRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedVenueReview'
+              $ref: '#/components/schemas/PatchedVenueReviewRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2909,7 +3104,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - venues
+      - Venue Details
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2948,7 +3143,7 @@ paths:
         schema:
           type: string
       tags:
-      - venues
+      - Venue Category & Amenities
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -2975,7 +3170,7 @@ paths:
         description: A UUID string identifying this amenity.
         required: true
       tags:
-      - venues
+      - Venue Category & Amenities
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3016,7 +3211,7 @@ paths:
         schema:
           type: string
       tags:
-      - venues
+      - Venue Category & Amenities
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3031,18 +3226,18 @@ paths:
     post:
       operationId: venues_categories_create
       tags:
-      - venues
+      - Venue Category & Amenities
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
         required: true
       security:
       - jwtAuth: []
@@ -3066,7 +3261,7 @@ paths:
         description: A UUID string identifying this venue category.
         required: true
       tags:
-      - venues
+      - Venue Category & Amenities
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3089,18 +3284,18 @@ paths:
         description: A UUID string identifying this venue category.
         required: true
       tags:
-      - venues
+      - Venue Category & Amenities
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/VenueCategory'
+              $ref: '#/components/schemas/VenueCategoryRequest'
         required: true
       security:
       - jwtAuth: []
@@ -3123,18 +3318,18 @@ paths:
         description: A UUID string identifying this venue category.
         required: true
       tags:
-      - venues
+      - Venue Category & Amenities
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedVenueCategory'
+              $ref: '#/components/schemas/PatchedVenueCategoryRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedVenueCategory'
+              $ref: '#/components/schemas/PatchedVenueCategoryRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedVenueCategory'
+              $ref: '#/components/schemas/PatchedVenueCategoryRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3156,20 +3351,55 @@ paths:
         description: A UUID string identifying this venue category.
         required: true
       tags:
-      - venues
+      - Venue Category & Amenities
       security:
       - jwtAuth: []
       - cookieAuth: []
       responses:
         '204':
           description: No response body
+  /api/venues/dashboard/:
+    get:
+      operationId: venues_dashboard_retrieve
+      description: Get earnings and ticket stats for the logged-in venue.
+      summary: Venue Dashboard
+      tags:
+      - Venues
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardAnalytics'
+          description: ''
+  /api/venues/stripe/dashboard/:
+    get:
+      operationId: venues_stripe_dashboard_retrieve
+      description: Generates Stripe Express dashboard login link.
+      summary: Stripe Dashboard Login
+      tags:
+      - Stripe Integration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/venues/stripe/onboard/:
     post:
       operationId: venues_stripe_onboard_create
       description: Generates Stripe Connect onboarding URL.
       summary: Stripe Onboarding
       tags:
-      - venues
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3187,7 +3417,7 @@ paths:
       description: Handles return from Stripe Connect onboarding.
       summary: Stripe Onboarding Return
       tags:
-      - venues
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3240,6 +3470,21 @@ components:
       - id
       - name
       - updated_at
+    AmenityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+        icon:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - name
     AvailableProfilesResponse:
       type: object
       properties:
@@ -3258,6 +3503,22 @@ components:
           type: string
         confirm_password:
           type: string
+      required:
+      - confirm_password
+      - new_password
+      - old_password
+    ChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 1
+        confirm_password:
+          type: string
+          minLength: 1
       required:
       - confirm_password
       - new_password
@@ -3297,18 +3558,130 @@ components:
       - text
       - updated_at
       - user
-    CustomTokenObtainPair:
+    CommentRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - text
+    CustomTokenObtainPairRequest:
       type: object
       properties:
         email:
           type: string
           writeOnly: true
+          minLength: 1
         password:
           type: string
           writeOnly: true
+          minLength: 1
       required:
       - email
       - password
+    DashboardAnalytics:
+      type: object
+      properties:
+        revenue_this_week:
+          type: number
+          format: double
+        revenue_percentage_change:
+          type: number
+          format: double
+        total_followers:
+          type: integer
+        new_followers_this_week:
+          type: integer
+        tickets_sold_this_week:
+          type: integer
+        tickets_sold_percentage_change:
+          type: number
+          format: double
+        heat_score:
+          type: integer
+        revenue_chart_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardChartData'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardRecentActivity'
+        total_tickets_sold:
+          type: integer
+        total_revenue:
+          type: number
+          format: double
+        platform_fees_paid:
+          type: number
+          format: double
+        net_earnings:
+          type: number
+          format: double
+        stripe_available_balance:
+          type: number
+          format: double
+        stripe_pending_balance:
+          type: number
+          format: double
+        active_events_count:
+          type: integer
+        recent_transactions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - active_events_count
+      - heat_score
+      - net_earnings
+      - new_followers_this_week
+      - platform_fees_paid
+      - recent_activity
+      - recent_transactions
+      - revenue_chart_data
+      - revenue_percentage_change
+      - revenue_this_week
+      - stripe_available_balance
+      - stripe_pending_balance
+      - tickets_sold_percentage_change
+      - tickets_sold_this_week
+      - total_followers
+      - total_revenue
+      - total_tickets_sold
+    DashboardChartData:
+      type: object
+      properties:
+        day:
+          type: string
+        revenue:
+          type: number
+          format: double
+      required:
+      - day
+      - revenue
+    DashboardRecentActivity:
+      type: object
+      properties:
+        type:
+          type: string
+        message:
+          type: string
+        time:
+          type: string
+          format: date-time
+        icon:
+          type: string
+      required:
+      - icon
+      - message
+      - time
+      - type
     DayOfWeekEnum:
       enum:
       - 0
@@ -3327,6 +3700,24 @@ components:
         * `4` - Friday
         * `5` - Saturday
         * `6` - Sunday
+    DressCodeEnum:
+      enum:
+      - Upscale Nightclub
+      - Casual
+      - Smart Casual
+      - Rave / Creative
+      - Pool Attire
+      - Black Tie
+      - No Dress Code
+      type: string
+      description: |-
+        * `Upscale Nightclub` - Upscale Nightclub
+        * `Casual` - Casual
+        * `Smart Casual` - Smart Casual
+        * `Rave / Creative` - Rave / Creative
+        * `Pool Attire` - Pool Attire
+        * `Black Tie` - Black Tie
+        * `No Dress Code` - No Dress Code
     Event:
       type: object
       properties:
@@ -3375,7 +3766,21 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventTicketTier'
-          readOnly: true
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineup'
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
         age_restriction:
           $ref: '#/components/schemas/AgeRestrictionEnum'
         categories:
@@ -3383,13 +3788,11 @@ components:
           items:
             $ref: '#/components/schemas/EventCategory'
           readOnly: true
-        category_ids:
+        tags:
           type: array
           items:
             type: string
-            format: uuid
-            writeOnly: true
-          writeOnly: true
+            maxLength: 50
         is_active:
           type: boolean
         rsvp_count:
@@ -3413,7 +3816,6 @@ components:
       - id
       - rsvp_count
       - start_time
-      - ticket_tiers
       - title
       - updated_at
       - user_rsvp_status
@@ -3438,20 +3840,157 @@ components:
       - created_at
       - id
       - name
-    EventRSVPRequest:
+    EventCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+    EventLineup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event:
+          type: string
+          format: uuid
+          readOnly: true
+        artist_name:
+          type: string
+          maxLength: 255
+        artist_image:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - artist_name
+      - created_at
+      - event
+    EventLineupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        artist_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        artist_image:
+          type: string
+          format: binary
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - artist_name
+    EventRSVPRequestRequest:
       type: object
       properties:
         status:
           type: string
+          minLength: 1
       required:
       - status
+    EventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+        ticket_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        ticket_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        ticket_tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventTicketTierRequest'
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineupRequest'
+        remove_lineup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        remove_ticket_tier_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
+        age_restriction:
+          $ref: '#/components/schemas/AgeRestrictionEnum'
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+            writeOnly: true
+          writeOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        is_active:
+          type: boolean
+      required:
+      - description
+      - start_time
+      - title
     EventTicketTier:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          readOnly: true
         event:
           type: string
           format: uuid
@@ -3470,17 +4009,48 @@ components:
         sold_quantity:
           type: integer
           readOnly: true
+        available_quantity:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+          nullable: true
         created_at:
           type: string
           format: date-time
           readOnly: true
       required:
+      - available_quantity
       - created_at
       - event
-      - id
       - name
       - price
       - sold_quantity
+      - total_quantity
+    EventTicketTierRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        total_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        description:
+          type: string
+          nullable: true
+      required:
+      - name
+      - price
       - total_quantity
     ForgotPassword:
       type: object
@@ -3488,6 +4058,15 @@ components:
         email:
           type: string
           format: email
+      required:
+      - email
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
       required:
       - email
     MediaType34bEnum:
@@ -3537,6 +4116,17 @@ components:
         * `image` - Image
         * `video` - Video
         * `document` - Document
+    MediaUploadRequest:
+      type: object
+      properties:
+        media_type:
+          $ref: '#/components/schemas/MediaUploadMediaTypeEnum'
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+      - media_type
     NullEnum:
       enum:
       - null
@@ -3609,6 +4199,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventCategory'
+    PaginatedEventLineupList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineup'
     PaginatedEventList:
       type: object
       required:
@@ -3908,57 +4521,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VenueReview'
-    PatchedComment:
+    PatchedCommentRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        user:
-          allOf:
-          - $ref: '#/components/schemas/UserPublicProfile'
-          readOnly: true
         text:
           type: string
+          minLength: 1
         parent:
           type: string
           format: uuid
           nullable: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-        replies_count:
-          type: integer
-          readOnly: true
-    PatchedEvent:
+    PatchedEventLineupRequest:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          readOnly: true
-        venue:
+        artist_name:
           type: string
-          format: uuid
-          readOnly: true
-        venue_name:
+          minLength: 1
+          maxLength: 255
+        artist_image:
           type: string
-          readOnly: true
-        venue_image:
-          type: string
-          format: uri
-          readOnly: true
+          format: binary
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PatchedEventRequest:
+      type: object
+      properties:
         title:
           type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
+          minLength: 1
         start_time:
           type: string
           format: date-time
@@ -3968,7 +4566,7 @@ components:
           nullable: true
         cover_image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         ticket_price:
           type: string
@@ -3983,15 +4581,36 @@ components:
         ticket_tiers:
           type: array
           items:
-            $ref: '#/components/schemas/EventTicketTier'
-          readOnly: true
-        age_restriction:
-          $ref: '#/components/schemas/AgeRestrictionEnum'
-        categories:
+            $ref: '#/components/schemas/EventTicketTierRequest'
+        lineup:
           type: array
           items:
-            $ref: '#/components/schemas/EventCategory'
-          readOnly: true
+            $ref: '#/components/schemas/EventLineupRequest'
+        remove_lineup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        remove_ticket_tier_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
+        age_restriction:
+          $ref: '#/components/schemas/AgeRestrictionEnum'
         category_ids:
           type: array
           items:
@@ -3999,35 +4618,23 @@ components:
             format: uuid
             writeOnly: true
           writeOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
         is_active:
           type: boolean
-        rsvp_count:
-          type: integer
-          readOnly: true
-        user_rsvp_status:
-          type: string
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedEventTicketTier:
+    PatchedEventTicketTierRequest:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          readOnly: true
-        event:
-          type: string
-          format: uuid
-          readOnly: true
         name:
           type: string
+          minLength: 1
           maxLength: 100
         price:
           type: string
@@ -4037,29 +4644,12 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
-        sold_quantity:
-          type: integer
-          readOnly: true
-        created_at:
+        description:
           type: string
-          format: date-time
-          readOnly: true
-    PatchedPost:
+          nullable: true
+    PatchedPostRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        author:
-          allOf:
-          - $ref: '#/components/schemas/UserPublicProfile'
-          readOnly: true
-        venue_profile:
-          type: string
-          format: uuid
-          readOnly: true
-          nullable: true
         event:
           type: string
           format: uuid
@@ -4072,6 +4662,7 @@ components:
           type: array
           items:
             type: string
+            minLength: 1
             maxLength: 50
           nullable: true
           maxItems: 10
@@ -4079,59 +4670,16 @@ components:
           type: string
           format: uuid
           nullable: true
-        location_coordinates:
-          type: string
-          readOnly: true
-        media:
-          type: array
-          items:
-            $ref: '#/components/schemas/PostMedia'
-          readOnly: true
-        mentions:
-          type: array
-          items:
-            $ref: '#/components/schemas/PostMention'
-          readOnly: true
-        likes_count:
-          type: integer
-          readOnly: true
-        comments_count:
-          type: integer
-          readOnly: true
         shares_count:
           type: integer
           maximum: 2147483647
           minimum: 0
-        is_liked:
-          type: boolean
-          readOnly: true
-        is_saved:
-          type: boolean
-          readOnly: true
-        recent_comments:
-          type: string
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedProfile:
+    PatchedProfileRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        email:
-          type: string
-          format: email
-          readOnly: true
         username:
           type: string
+          minLength: 1
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
           pattern: ^[\w.@+-]+$
@@ -4150,21 +4698,15 @@ components:
           type: string
         profile_image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         cover_image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         location_name:
           type: string
           maxLength: 255
-        followers_count:
-          type: integer
-          readOnly: true
-        following_count:
-          type: integer
-          readOnly: true
         latitude:
           type: number
           format: double
@@ -4173,73 +4715,14 @@ components:
           type: number
           format: double
           writeOnly: true
-        lat:
-          type: number
-          format: float
-          readOnly: true
-        lng:
-          type: number
-          format: float
-          readOnly: true
-        registration_type:
-          allOf:
-          - $ref: '#/components/schemas/RegistrationTypeEnum'
-          readOnly: true
-        is_user_profile_active:
-          type: boolean
-          readOnly: true
-    PatchedTicketPurchase:
+    PatchedTicketPurchaseRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        user:
-          type: string
-          format: uuid
-          readOnly: true
-        user_email:
-          type: string
-          format: email
-          readOnly: true
-        event:
-          type: string
-          format: uuid
-          readOnly: true
-        event_title:
-          type: string
-          readOnly: true
-        ticket_tier:
-          type: string
-          format: uuid
-          readOnly: true
-        ticket_tier_name:
-          type: string
-          readOnly: true
         quantity:
           type: integer
           maximum: 2147483647
           minimum: 0
-        total_amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          readOnly: true
-        platform_fee:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          readOnly: true
-        status:
-          allOf:
-          - $ref: '#/components/schemas/StatusEnum'
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedUserSettings:
+    PatchedUserSettingsRequest:
       type: object
       properties:
         is_activity_status_visible:
@@ -4272,32 +4755,62 @@ components:
           type: boolean
         notify_sms:
           type: boolean
-    PatchedVenue:
+    PatchedVenueCategoryRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        owner:
-          type: string
-          format: uuid
-          readOnly: true
         name:
           type: string
+          minLength: 1
+          maxLength: 100
+    PatchedVenueGalleryRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        caption:
+          type: string
+          maxLength: 255
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    PatchedVenueOperatingHourRequest:
+      type: object
+      properties:
+        day_of_week:
+          allOf:
+          - $ref: '#/components/schemas/DayOfWeekEnum'
+          minimum: -2147483648
+          maximum: 2147483647
+        open_time:
+          type: string
+          format: time
+          nullable: true
+        close_time:
+          type: string
+          format: time
+          nullable: true
+        is_closed:
+          type: boolean
+    PatchedVenueRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          nullable: true
+          maxLength: 150
+        name:
+          type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
+          minLength: 1
         address:
           type: string
+          minLength: 1
           maxLength: 255
-        location:
-          type: string
-          readOnly: true
-        location_coordinates:
-          type: object
-          additionalProperties: {}
-          readOnly: true
         latitude:
           type: number
           format: double
@@ -4306,17 +4819,13 @@ components:
           type: number
           format: double
           writeOnly: true
-        distance:
-          type: number
-          format: float
-          readOnly: true
         profile_image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         cover_image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         price_tier:
           nullable: true
@@ -4341,11 +4850,6 @@ components:
           type: string
           format: uri
           maxLength: 200
-        amenities:
-          type: array
-          items:
-            $ref: '#/components/schemas/Amenity'
-          readOnly: true
         amenity_ids:
           type: array
           items:
@@ -4353,11 +4857,6 @@ components:
             format: uuid
             writeOnly: true
           writeOnly: true
-        categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/VenueCategory'
-          readOnly: true
         category_ids:
           type: array
           items:
@@ -4367,128 +4866,15 @@ components:
           writeOnly: true
         is_active:
           type: boolean
-        is_following:
-          type: boolean
-          readOnly: true
-        gallery:
-          type: array
-          items:
-            $ref: '#/components/schemas/VenueGallery'
-          readOnly: true
-        operating_hours:
-          type: array
-          items:
-            $ref: '#/components/schemas/VenueOperatingHour'
-          readOnly: true
-        statistic:
-          allOf:
-          - $ref: '#/components/schemas/VenueStatistic'
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedVenueCategory:
+    PatchedVenueReviewRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        name:
-          type: string
-          maxLength: 100
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedVenueGallery:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        venue:
-          type: string
-          format: uuid
-          readOnly: true
-        image:
-          type: string
-          format: uri
-        caption:
-          type: string
-          maxLength: 255
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedVenueOperatingHour:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        venue:
-          type: string
-          format: uuid
-          readOnly: true
-        day_of_week:
-          allOf:
-          - $ref: '#/components/schemas/DayOfWeekEnum'
-          minimum: -2147483648
-          maximum: 2147483647
-        open_time:
-          type: string
-          format: time
-          nullable: true
-        close_time:
-          type: string
-          format: time
-          nullable: true
-        is_closed:
-          type: boolean
-    PatchedVenueReview:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        venue:
-          type: string
-          format: uuid
-          readOnly: true
-        user:
-          type: string
-          format: uuid
-          readOnly: true
-        user_name:
-          type: string
-          readOnly: true
         rating:
           type: integer
           maximum: 32767
           minimum: 0
         comment:
           type: string
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
     Post:
       type: object
       properties:
@@ -4596,6 +4982,20 @@ components:
       required:
       - file
       - id
+    PostMediaRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        media_type:
+          $ref: '#/components/schemas/MediaType34bEnum'
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - file
     PostMention:
       type: object
       properties:
@@ -4609,6 +5009,33 @@ components:
       required:
       - id
       - user
+    PostRequest:
+      type: object
+      properties:
+        event:
+          type: string
+          format: uuid
+          nullable: true
+        caption:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          nullable: true
+          maxItems: 10
+        location_venue:
+          type: string
+          format: uuid
+          nullable: true
+        shares_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
     PriceTierEnum:
       enum:
       - 1
@@ -4667,14 +5094,6 @@ components:
         following_count:
           type: integer
           readOnly: true
-        latitude:
-          type: number
-          format: double
-          writeOnly: true
-        longitude:
-          type: number
-          format: double
-          writeOnly: true
         lat:
           type: number
           format: float
@@ -4733,6 +5152,49 @@ components:
       description: |-
         * `user` - user
         * `venue` - venue
+    ProfileRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        dob:
+          type: string
+          format: date
+          nullable: true
+        bio:
+          type: string
+        profile_image:
+          type: string
+          format: binary
+          nullable: true
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+        location_name:
+          type: string
+          maxLength: 255
+        latitude:
+          type: number
+          format: double
+          writeOnly: true
+        longitude:
+          type: number
+          format: double
+          writeOnly: true
+      required:
+      - username
     Register:
       type: object
       properties:
@@ -4754,18 +5216,58 @@ components:
           type: string
           format: date
           nullable: true
+        registration_type:
+          $ref: '#/components/schemas/RegistrationTypeEnum'
+        profile_image:
+          type: string
+          format: uri
+          nullable: true
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - email
+      - id
+    RegisterRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        dob:
+          type: string
+          format: date
+          nullable: true
         password:
           type: string
           writeOnly: true
+          minLength: 1
         confirm_password:
           type: string
           writeOnly: true
+          minLength: 1
         registration_type:
           $ref: '#/components/schemas/RegistrationTypeEnum'
+        profile_image:
+          type: string
+          format: binary
+          nullable: true
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
       required:
       - confirm_password
       - email
-      - id
       - password
     RegistrationTypeEnum:
       enum:
@@ -4783,6 +5285,15 @@ components:
           format: email
       required:
       - email
+    ResendOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     ResetPassword:
       type: object
       properties:
@@ -4791,17 +5302,42 @@ components:
           format: email
         token:
           type: string
+      required:
+      - email
+      - token
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
         new_password:
           type: string
           writeOnly: true
+          minLength: 1
         confirm_password:
           type: string
           writeOnly: true
+          minLength: 1
       required:
       - confirm_password
       - email
       - new_password
       - token
+    RoleEnum:
+      enum:
+      - headliner
+      - co_headliner
+      - support
+      type: string
+      description: |-
+        * `headliner` - Headliner
+        * `co_headliner` - Co-Headliner
+        * `support` - Support
     StatusEnum:
       enum:
       - pending
@@ -4850,13 +5386,24 @@ components:
       - id
       - media
       - venue_profile
-    SwitchProfileRequest:
+    StoryRequest:
+      type: object
+      properties:
+        media:
+          type: string
+          format: binary
+        media_type:
+          $ref: '#/components/schemas/MediaType34bEnum'
+      required:
+      - media
+    SwitchProfileRequestRequest:
       type: object
       properties:
         profile:
           $ref: '#/components/schemas/ProfileEnum'
         profile_id:
           type: string
+          minLength: 1
       required:
       - profile
       - profile_id
@@ -4936,6 +5483,13 @@ components:
       - total_amount
       - user
       - user_email
+    TicketPurchaseRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
     TokenRefresh:
       type: object
       properties:
@@ -4946,6 +5500,14 @@ components:
           type: string
       required:
       - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
       - refresh
     UserBlocked:
       type: object
@@ -5087,6 +5649,39 @@ components:
       - lat
       - lng
       - username
+    UserPublicProfileRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        bio:
+          type: string
+        profile_image:
+          type: string
+          format: binary
+          nullable: true
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+        location_name:
+          type: string
+          maxLength: 255
+        registration_type:
+          $ref: '#/components/schemas/RegistrationTypeEnum'
+      required:
+      - username
     UserReport:
       type: object
       properties:
@@ -5111,7 +5706,51 @@ components:
       - id
       - reason
       - reported_user
+    UserReportRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+      required:
+      - reason
     UserSettings:
+      type: object
+      properties:
+        is_activity_status_visible:
+          type: boolean
+        is_location_shared:
+          type: boolean
+        is_nightlife_score_visible:
+          type: boolean
+        allow_tagging:
+          type: boolean
+        allow_messages_from_non_followers:
+          type: boolean
+        nightlife_score:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        notify_likes:
+          type: boolean
+        notify_comments:
+          type: boolean
+        notify_new_followers:
+          type: boolean
+        notify_messages:
+          type: boolean
+        notify_events_rsvps:
+          type: boolean
+        notify_heatmap_alerts:
+          type: boolean
+        notify_promotions:
+          type: boolean
+        notify_sms:
+          type: boolean
+    UserSettingsRequest:
       type: object
       properties:
         is_activity_status_visible:
@@ -5155,6 +5794,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        username:
+          type: string
+          nullable: true
+          maxLength: 150
         name:
           type: string
           maxLength: 255
@@ -5170,14 +5813,6 @@ components:
           type: object
           additionalProperties: {}
           readOnly: true
-        latitude:
-          type: number
-          format: double
-          writeOnly: true
-        longitude:
-          type: number
-          format: double
-          writeOnly: true
         distance:
           type: number
           format: float
@@ -5218,29 +5853,18 @@ components:
           items:
             $ref: '#/components/schemas/Amenity'
           readOnly: true
-        amenity_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
-            writeOnly: true
-          writeOnly: true
         categories:
           type: array
           items:
             $ref: '#/components/schemas/VenueCategory'
           readOnly: true
-        category_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
-            writeOnly: true
-          writeOnly: true
         is_active:
           type: boolean
         is_following:
           type: boolean
+          readOnly: true
+        is_stripe_connected:
+          type: string
           readOnly: true
         gallery:
           type: array
@@ -5274,6 +5898,7 @@ components:
       - gallery
       - id
       - is_following
+      - is_stripe_connected
       - location
       - location_coordinates
       - name
@@ -5298,6 +5923,15 @@ components:
       required:
       - created_at
       - id
+      - name
+    VenueCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
       - name
     VenueGallery:
       type: object
@@ -5329,6 +5963,21 @@ components:
       - id
       - image
       - venue
+    VenueGalleryRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        caption:
+          type: string
+          maxLength: 255
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - image
     VenueOperatingHour:
       type: object
       properties:
@@ -5359,6 +6008,103 @@ components:
       - day_of_week
       - id
       - venue
+    VenueOperatingHourRequest:
+      type: object
+      properties:
+        day_of_week:
+          allOf:
+          - $ref: '#/components/schemas/DayOfWeekEnum'
+          minimum: -2147483648
+          maximum: 2147483647
+        open_time:
+          type: string
+          format: time
+          nullable: true
+        close_time:
+          type: string
+          format: time
+          nullable: true
+        is_closed:
+          type: boolean
+      required:
+      - day_of_week
+    VenueRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          nullable: true
+          maxLength: 150
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        latitude:
+          type: number
+          format: double
+          writeOnly: true
+        longitude:
+          type: number
+          format: double
+          writeOnly: true
+        profile_image:
+          type: string
+          format: binary
+          nullable: true
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+        price_tier:
+          nullable: true
+          minimum: -2147483648
+          maximum: 2147483647
+          oneOf:
+          - $ref: '#/components/schemas/PriceTierEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 20
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        amenity_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+            writeOnly: true
+          writeOnly: true
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+            writeOnly: true
+          writeOnly: true
+        is_active:
+          type: boolean
+      required:
+      - address
+      - description
+      - name
     VenueReview:
       type: object
       properties:
@@ -5399,7 +6145,45 @@ components:
       - user
       - user_name
       - venue
+    VenueReviewRequest:
+      type: object
+      properties:
+        rating:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        comment:
+          type: string
+      required:
+      - rating
     VenueStatistic:
+      type: object
+      properties:
+        total_views:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_reviews:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        favorites_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        followers_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        heat_score:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    VenueStatisticRequest:
       type: object
       properties:
         total_views:
@@ -5438,6 +6222,20 @@ components:
       required:
       - email
       - otp
+    VerifyOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 4
+      required:
+      - email
+      - otp
     VerifyResetOTP:
       type: object
       properties:
@@ -5446,6 +6244,20 @@ components:
           format: email
         otp:
           type: string
+          maxLength: 4
+      required:
+      - email
+      - otp
+    VerifyResetOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
           maxLength: 4
       required:
       - email

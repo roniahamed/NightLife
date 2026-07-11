@@ -179,6 +179,205 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
           description: ''
+  /api/events/{event_pk}/lineups/:
+    get:
+      operationId: events_lineups_list
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventLineupList'
+          description: ''
+    post:
+      operationId: events_lineups_create
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+  /api/events/{event_pk}/lineups/{id}/:
+    get:
+      operationId: events_lineups_retrieve
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    put:
+      operationId: events_lineups_update
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventLineupRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    patch:
+      operationId: events_lineups_partial_update
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEventLineupRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLineup'
+          description: ''
+    delete:
+      operationId: events_lineups_destroy
+      parameters:
+      - in: path
+        name: event_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Lineup
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/events/{event_pk}/tickets/:
     get:
       operationId: events_tickets_list
@@ -761,7 +960,7 @@ paths:
       description: Webhook handler for Stripe payment events.
       summary: Stripe Webhook
       tags:
-      - Event Payments
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3159,13 +3358,48 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/venues/dashboard/:
+    get:
+      operationId: venues_dashboard_retrieve
+      description: Get earnings and ticket stats for the logged-in venue.
+      summary: Venue Dashboard
+      tags:
+      - Venues
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardAnalytics'
+          description: ''
+  /api/venues/stripe/dashboard/:
+    get:
+      operationId: venues_stripe_dashboard_retrieve
+      description: Generates Stripe Express dashboard login link.
+      summary: Stripe Dashboard Login
+      tags:
+      - Stripe Integration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/venues/stripe/onboard/:
     post:
       operationId: venues_stripe_onboard_create
       description: Generates Stripe Connect onboarding URL.
       summary: Stripe Onboarding
       tags:
-      - Venue Payments
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3183,7 +3417,7 @@ paths:
       description: Handles return from Stripe Connect onboarding.
       summary: Stripe Onboarding Return
       tags:
-      - Venue Payments
+      - Stripe Integration
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3350,6 +3584,104 @@ components:
       required:
       - email
       - password
+    DashboardAnalytics:
+      type: object
+      properties:
+        revenue_this_week:
+          type: number
+          format: double
+        revenue_percentage_change:
+          type: number
+          format: double
+        total_followers:
+          type: integer
+        new_followers_this_week:
+          type: integer
+        tickets_sold_this_week:
+          type: integer
+        tickets_sold_percentage_change:
+          type: number
+          format: double
+        heat_score:
+          type: integer
+        revenue_chart_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardChartData'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardRecentActivity'
+        total_tickets_sold:
+          type: integer
+        total_revenue:
+          type: number
+          format: double
+        platform_fees_paid:
+          type: number
+          format: double
+        net_earnings:
+          type: number
+          format: double
+        stripe_available_balance:
+          type: number
+          format: double
+        stripe_pending_balance:
+          type: number
+          format: double
+        active_events_count:
+          type: integer
+        recent_transactions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - active_events_count
+      - heat_score
+      - net_earnings
+      - new_followers_this_week
+      - platform_fees_paid
+      - recent_activity
+      - recent_transactions
+      - revenue_chart_data
+      - revenue_percentage_change
+      - revenue_this_week
+      - stripe_available_balance
+      - stripe_pending_balance
+      - tickets_sold_percentage_change
+      - tickets_sold_this_week
+      - total_followers
+      - total_revenue
+      - total_tickets_sold
+    DashboardChartData:
+      type: object
+      properties:
+        day:
+          type: string
+        revenue:
+          type: number
+          format: double
+      required:
+      - day
+      - revenue
+    DashboardRecentActivity:
+      type: object
+      properties:
+        type:
+          type: string
+        message:
+          type: string
+        time:
+          type: string
+          format: date-time
+        icon:
+          type: string
+      required:
+      - icon
+      - message
+      - time
+      - type
     DayOfWeekEnum:
       enum:
       - 0
@@ -3368,6 +3700,24 @@ components:
         * `4` - Friday
         * `5` - Saturday
         * `6` - Sunday
+    DressCodeEnum:
+      enum:
+      - Upscale Nightclub
+      - Casual
+      - Smart Casual
+      - Rave / Creative
+      - Pool Attire
+      - Black Tie
+      - No Dress Code
+      type: string
+      description: |-
+        * `Upscale Nightclub` - Upscale Nightclub
+        * `Casual` - Casual
+        * `Smart Casual` - Smart Casual
+        * `Rave / Creative` - Rave / Creative
+        * `Pool Attire` - Pool Attire
+        * `Black Tie` - Black Tie
+        * `No Dress Code` - No Dress Code
     Event:
       type: object
       properties:
@@ -3416,7 +3766,21 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventTicketTier'
-          readOnly: true
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineup'
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
         age_restriction:
           $ref: '#/components/schemas/AgeRestrictionEnum'
         categories:
@@ -3424,6 +3788,11 @@ components:
           items:
             $ref: '#/components/schemas/EventCategory'
           readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
         is_active:
           type: boolean
         rsvp_count:
@@ -3447,7 +3816,6 @@ components:
       - id
       - rsvp_count
       - start_time
-      - ticket_tiers
       - title
       - updated_at
       - user_rsvp_status
@@ -3481,6 +3849,51 @@ components:
           maxLength: 100
       required:
       - name
+    EventLineup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event:
+          type: string
+          format: uuid
+          readOnly: true
+        artist_name:
+          type: string
+          maxLength: 255
+        artist_image:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - artist_name
+      - created_at
+      - event
+    EventLineupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        artist_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        artist_image:
+          type: string
+          format: binary
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - artist_name
     EventRSVPRequestRequest:
       type: object
       properties:
@@ -3520,6 +3933,37 @@ components:
           format: uri
           nullable: true
           maxLength: 200
+        ticket_tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventTicketTierRequest'
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineupRequest'
+        remove_lineup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        remove_ticket_tier_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
         age_restriction:
           $ref: '#/components/schemas/AgeRestrictionEnum'
         category_ids:
@@ -3529,6 +3973,12 @@ components:
             format: uuid
             writeOnly: true
           writeOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
         is_active:
           type: boolean
       required:
@@ -3541,7 +3991,6 @@ components:
         id:
           type: string
           format: uuid
-          readOnly: true
         event:
           type: string
           format: uuid
@@ -3560,14 +4009,20 @@ components:
         sold_quantity:
           type: integer
           readOnly: true
+        available_quantity:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+          nullable: true
         created_at:
           type: string
           format: date-time
           readOnly: true
       required:
+      - available_quantity
       - created_at
       - event
-      - id
       - name
       - price
       - sold_quantity
@@ -3575,6 +4030,9 @@ components:
     EventTicketTierRequest:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string
           minLength: 1
@@ -3587,6 +4045,9 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        description:
+          type: string
+          nullable: true
       required:
       - name
       - price
@@ -3738,6 +4199,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventCategory'
+    PaginatedEventLineupList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineup'
     PaginatedEventList:
       type: object
       required:
@@ -4047,6 +4531,22 @@ components:
           type: string
           format: uuid
           nullable: true
+    PatchedEventLineupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        artist_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        artist_image:
+          type: string
+          format: binary
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
     PatchedEventRequest:
       type: object
       properties:
@@ -4078,6 +4578,37 @@ components:
           format: uri
           nullable: true
           maxLength: 200
+        ticket_tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventTicketTierRequest'
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLineupRequest'
+        remove_lineup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        remove_ticket_tier_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        custom_venue_address:
+          type: string
+          nullable: true
+          maxLength: 255
+        dress_code:
+          $ref: '#/components/schemas/DressCodeEnum'
         age_restriction:
           $ref: '#/components/schemas/AgeRestrictionEnum'
         category_ids:
@@ -4087,11 +4618,20 @@ components:
             format: uuid
             writeOnly: true
           writeOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
         is_active:
           type: boolean
     PatchedEventTicketTierRequest:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string
           minLength: 1
@@ -4104,6 +4644,9 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        description:
+          type: string
+          nullable: true
     PatchedPostRequest:
       type: object
       properties:
@@ -4785,6 +5328,16 @@ components:
       - email
       - new_password
       - token
+    RoleEnum:
+      enum:
+      - headliner
+      - co_headliner
+      - support
+      type: string
+      description: |-
+        * `headliner` - Headliner
+        * `co_headliner` - Co-Headliner
+        * `support` - Support
     StatusEnum:
       enum:
       - pending
@@ -5310,6 +5863,9 @@ components:
         is_following:
           type: boolean
           readOnly: true
+        is_stripe_connected:
+          type: string
+          readOnly: true
         gallery:
           type: array
           items:
@@ -5342,6 +5898,7 @@ components:
       - gallery
       - id
       - is_following
+      - is_stripe_connected
       - location
       - location_coordinates
       - name
