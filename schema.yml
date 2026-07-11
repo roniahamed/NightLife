@@ -689,8 +689,8 @@ paths:
   /api/events/{id}/rsvp/:
     post:
       operationId: events_rsvp_create
-      description: RSVP to an event. Requires active_profile='user'. Status can be
-        'going' or 'interested' or 'remove'.
+      description: 'RSVP to an event. Requires active_profile=''user''. Pass is_going:
+        true to RSVP, false to remove.'
       summary: RSVP to Event
       parameters:
       - in: path
@@ -3798,8 +3798,8 @@ components:
         rsvp_count:
           type: integer
           readOnly: true
-        user_rsvp_status:
-          type: string
+        is_user_going:
+          type: boolean
           readOnly: true
         created_at:
           type: string
@@ -3814,11 +3814,11 @@ components:
       - created_at
       - description
       - id
+      - is_user_going
       - rsvp_count
       - start_time
       - title
       - updated_at
-      - user_rsvp_status
       - venue
       - venue_image
       - venue_name
@@ -3897,11 +3897,10 @@ components:
     EventRSVPRequestRequest:
       type: object
       properties:
-        status:
-          type: string
-          minLength: 1
+        is_going:
+          type: boolean
       required:
-      - status
+      - is_going
     EventRequest:
       type: object
       properties:

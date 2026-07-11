@@ -144,18 +144,13 @@ class EventTests(APITestCase):
         url = reverse('event-rsvp', kwargs={'pk': event.id})
         
         # RSVP Going
-        response = self.client.post(url, {'status': 'going'}, format='json')
-        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='going').exists())
-        
-        # RSVP Interested
-        response = self.client.post(url, {'status': 'interested'}, format='json')
-        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event, status='interested').exists())
+        response = self.client.post(url, {'is_going': True}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(EventRSVP.objects.filter(user=self.regular_user, event=event).exists())
         
         # Remove RSVP
-        response = self.client.post(url, {'status': 'remove'}, format='json')
-        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(url, {'is_going': False}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(EventRSVP.objects.filter(user=self.regular_user, event=event).exists())
 
 

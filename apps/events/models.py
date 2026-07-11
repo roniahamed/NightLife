@@ -85,14 +85,9 @@ class EventLineup(models.Model):
         return f"{self.artist_name} ({self.get_role_display()}) at {self.event.title}"
 
 class EventRSVP(models.Model):
-    RSVP_STATUS = (
-        ('going', 'Going'),
-        ('interested', 'Interested'),
-    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='rsvps')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_rsvps')
-    status = models.CharField(max_length=20, choices=RSVP_STATUS, default='going')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -100,7 +95,7 @@ class EventRSVP(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.user} is {self.status} to {self.event.title}"
+        return f"{self.user} is going to {self.event.title}"
 
 class EventTicketTier(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

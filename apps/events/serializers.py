@@ -14,7 +14,7 @@ class EventRSVPSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = EventRSVP
-        fields = ['id', 'event', 'user', 'user_name', 'user_profile_image', 'status', 'created_at']
+        fields = ['id', 'event', 'user', 'user_name', 'user_profile_image', 'created_at']
         read_only_fields = ['id', 'event', 'user', 'created_at']
 
 class EventTicketTierSerializer(serializers.ModelSerializer):
@@ -86,7 +86,7 @@ class EventSerializer(serializers.ModelSerializer):
         child=serializers.UUIDField(), write_only=True, required=False
     )
     rsvp_count = serializers.SerializerMethodField(read_only=True)
-    user_rsvp_status = serializers.SerializerMethodField(read_only=True)
+    is_user_going = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Event
@@ -95,24 +95,20 @@ class EventSerializer(serializers.ModelSerializer):
             'start_time', 'end_time', 'cover_image', 'ticket_price', 'ticket_url',
             'ticket_tiers', 'lineup', 'remove_lineup_ids', 'remove_ticket_tier_ids', 'capacity', 'custom_venue_address', 'dress_code',
             'age_restriction', 'categories', 'category_ids', 'tags', 'is_active', 
-            'rsvp_count', 'user_rsvp_status', 'created_at', 'updated_at'
+            'rsvp_count', 'is_user_going', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'venue', 'created_at', 'updated_at']
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_rsvp_count(self, obj):
-        return obj.rsvps.filter(status='going').count()
+        return obj.rsvps.count()
 
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_user_rsvp_status(self, obj):
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_is_user_going(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            try:
-                rsvp = EventRSVP.objects.get(user=request.user, event=obj)
-                return rsvp.status
-            except EventRSVP.DoesNotExist:
-                return None
-        return None
+            return EventRSVP.objects.filter(user=request.user, event=obj).exists()
+        return False
 
     def create(self, validated_data):
         ticket_tiers_data = validated_data.pop('ticket_tiers', [])

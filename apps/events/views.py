@@ -98,30 +98,24 @@ class EventRSVPView(APIView):
 
     @extend_schema(
         summary="RSVP to Event", 
-        description="RSVP to an event. Requires active_profile='user'. Status can be 'going' or 'interested' or 'remove'.", 
+        description="RSVP to an event. Requires active_profile='user'. Pass is_going: true to RSVP, false to remove.", 
         tags=['Events'],
-        request=inline_serializer(name='EventRSVPRequest', fields={'status': rf_serializers.CharField()}),
+        request=inline_serializer(name='EventRSVPRequest', fields={'is_going': rf_serializers.BooleanField()}),
         responses={200: OpenApiTypes.OBJECT}
     )
     def post(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
-        status_req = request.data.get('status')
+        is_going = request.data.get('is_going')
         
-        if status_req == 'remove':
+        if is_going is None:
+             return error_response(message="'is_going' boolean field is required.", status=status.HTTP_400_BAD_REQUEST)
+             
+        if is_going:
+            EventRSVP.objects.get_or_create(user=request.user, event=event)
+            return success_response(message="RSVP added successfully.")
+        else:
             EventRSVP.objects.filter(user=request.user, event=event).delete()
             return success_response(message="RSVP removed successfully.")
-            
-        if status_req not in ['going', 'interested']:
-            return error_response(message="Invalid status. Must be 'going', 'interested', or 'remove'.", status=status.HTTP_400_BAD_REQUEST)
-            
-        rsvp, created = EventRSVP.objects.update_or_create(
-            user=request.user, 
-            event=event,
-            defaults={'status': status_req}
-        )
-        
-        
-        return success_response(message=f"RSVP updated to {status_req} successfully.")
 
 @extend_schema_view(
     list=extend_schema(tags=['Event Tickets']),
