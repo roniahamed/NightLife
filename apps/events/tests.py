@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 import datetime
 from unittest.mock import patch
-from .models import Event, EventCategory, EventRSVP, EventTicketTier, TicketPurchase
+from .models import Event, EventCategory, EventRSVP, EventTicketTier, TicketPurchase, EventLineup
 from apps.venues.models import Venue
 import uuid
 
@@ -67,6 +67,70 @@ class EventTests(APITestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_event_with_nested_data(self):
+        self.client.force_authenticate(user=self.venue_user)
+        url = reverse('events-list')
+        data = {
+            'title': 'Nested Create Party',
+            'description': 'Nested desc',
+            'start_time': timezone.now() + datetime.timedelta(days=2),
+            'ticket_price': '0.00',
+            'ticket_tiers': [
+                {'name': 'VIP', 'price': '50.00', 'total_quantity': 50, 'description': 'VIP desc'}
+            ],
+            'lineup': [
+                {'artist_name': 'Artist 1', 'role': 'headliner'}
+            ]
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        event = Event.objects.get(title='Nested Create Party')
+        self.assertEqual(event.ticket_tiers.count(), 1)
+        self.assertEqual(event.lineup.count(), 1)
+        self.assertEqual(event.ticket_tiers.first().name, 'VIP')
+        self.assertEqual(event.lineup.first().artist_name, 'Artist 1')
+
+    def test_update_event_with_nested_data(self):
+        self.client.force_authenticate(user=self.venue_user)
+        event = Event.objects.create(
+            venue=self.venue,
+            title='Update Party',
+            start_time=timezone.now() + datetime.timedelta(days=2)
+        )
+        tier1 = EventTicketTier.objects.create(event=event, name='Tier 1', price='10.00', total_quantity=100)
+        tier2 = EventTicketTier.objects.create(event=event, name='Tier 2', price='20.00', total_quantity=50)
+        artist1 = EventLineup.objects.create(event=event, artist_name='Artist 1')
+        artist2 = EventLineup.objects.create(event=event, artist_name='Artist 2')
+        
+        url = reverse('events-detail', kwargs={'pk': event.id})
+        data = {
+            'title': 'Updated Party',
+            'ticket_tiers': [
+                {'id': str(tier1.id), 'name': 'Tier 1 Updated', 'price': '15.00'}, 
+                {'name': 'Tier 3', 'price': '30.00', 'total_quantity': 10} 
+            ],
+            'lineup': [
+                {'id': str(artist1.id), 'artist_name': 'Artist 1 Updated'} 
+            ],
+            'remove_ticket_tier_ids': [str(tier2.id)], 
+            'remove_lineup_ids': [str(artist2.id)] 
+        }
+        
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        event.refresh_from_db()
+        self.assertEqual(event.title, 'Updated Party')
+        
+        self.assertEqual(event.ticket_tiers.count(), 2)
+        self.assertTrue(event.ticket_tiers.filter(name='Tier 1 Updated').exists())
+        self.assertTrue(event.ticket_tiers.filter(name='Tier 3').exists())
+        self.assertFalse(event.ticket_tiers.filter(id=tier2.id).exists())
+        
+        self.assertEqual(event.lineup.count(), 1)
+        self.assertTrue(event.lineup.filter(artist_name='Artist 1 Updated').exists())
+        self.assertFalse(event.lineup.filter(id=artist2.id).exists())
 
     def test_rsvp_to_event(self):
         event = Event.objects.create(

@@ -93,7 +93,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'venue', 'venue_name', 'venue_image', 'title', 'description', 
             'start_time', 'end_time', 'cover_image', 'ticket_price', 'ticket_url',
-            'ticket_tiers', 'lineup', 'capacity', 'custom_venue_address', 'dress_code',
+            'ticket_tiers', 'lineup', 'remove_lineup_ids', 'remove_ticket_tier_ids', 'capacity', 'custom_venue_address', 'dress_code',
             'age_restriction', 'categories', 'category_ids', 'tags', 'is_active', 
             'rsvp_count', 'user_rsvp_status', 'created_at', 'updated_at'
         ]
