@@ -53,18 +53,26 @@ class TicketPurchaseSerializer(serializers.ModelSerializer):
     event_title = serializers.CharField(source='event.title', read_only=True)
     ticket_tier_name = serializers.CharField(source='ticket_tier.name', read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    total_amount = serializers.DecimalField(source='base_amount', max_digits=10, decimal_places=2, read_only=True)
+    stripe_fee = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = TicketPurchase
         fields = [
             'id', 'user', 'user_email', 'event', 'event_title', 'ticket_tier', 
             'ticket_tier_name', 'quantity', 'total_amount', 'platform_fee', 
-            'status', 'created_at'
+            'stripe_fee', 'status', 'created_at'
         ]
         read_only_fields = [
             'id', 'user', 'event', 'ticket_tier', 'total_amount', 
             'platform_fee', 'status', 'created_at'
         ]
+
+    @extend_schema_field(OpenApiTypes.DECIMAL)
+    def get_stripe_fee(self, obj):
+        if obj.total_amount and obj.base_amount:
+            return obj.total_amount - obj.base_amount
+        return 0
 
 class EventSerializer(serializers.ModelSerializer):
     categories = EventCategorySerializer(many=True, read_only=True)

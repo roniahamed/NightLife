@@ -5462,6 +5462,10 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           readOnly: true
+        stripe_fee:
+          type: number
+          format: double
+          readOnly: true
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -5477,6 +5481,7 @@ components:
       - id
       - platform_fee
       - status
+      - stripe_fee
       - ticket_tier
       - ticket_tier_name
       - total_amount

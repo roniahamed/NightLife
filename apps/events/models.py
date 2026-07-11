@@ -126,6 +126,7 @@ class TicketPurchase(models.Model):
     ticket_tier = models.ForeignKey(EventTicketTier, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     
+    base_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2)
     

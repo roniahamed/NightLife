@@ -130,11 +130,11 @@ def get_dashboard_stats(venue):
     purchases_this_week = TicketPurchase.objects.filter(event__venue=venue, status='completed', created_at__gte=one_week_ago)
     purchases_last_week = TicketPurchase.objects.filter(event__venue=venue, status='completed', created_at__gte=two_weeks_ago, created_at__lt=one_week_ago)
     
-    agg_this_week = purchases_this_week.aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
-    revenue_this_week = (agg_this_week['gross'] or 0) - (agg_this_week['fees'] or 0)
+    agg_this_week = purchases_this_week.aggregate(gross=Sum('base_amount'), fees=Sum('platform_fee'))
+    revenue_this_week = agg_this_week['gross'] or 0
     
-    agg_last_week = purchases_last_week.aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
-    revenue_last_week = (agg_last_week['gross'] or 0) - (agg_last_week['fees'] or 0)
+    agg_last_week = purchases_last_week.aggregate(gross=Sum('base_amount'), fees=Sum('platform_fee'))
+    revenue_last_week = agg_last_week['gross'] or 0
     
     if revenue_last_week > 0:
         revenue_change = float(((revenue_this_week - revenue_last_week) / revenue_last_week) * 100)
@@ -169,11 +169,10 @@ def get_dashboard_stats(venue):
             status='completed', 
             created_at__gte=day_start, 
             created_at__lt=day_end
-        ).aggregate(gross=Sum('total_amount'), fees=Sum('platform_fee'))
+        ).aggregate(gross=Sum('base_amount'), fees=Sum('platform_fee'))
         
         gross = agg['gross'] or 0
-        fees = agg['fees'] or 0
-        day_revenue = gross - fees
+        day_revenue = gross
         
         chart_data.append({
             'day': day_start.strftime('%a'),
@@ -216,9 +215,12 @@ def get_dashboard_stats(venue):
     # Original Data for backward compatibility
     all_purchases = TicketPurchase.objects.filter(event__venue=venue, status='completed')
     total_tickets_sold = all_purchases.aggregate(total=Sum('quantity'))['total'] or 0
-    total_revenue_all = all_purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_revenue_all = all_purchases.aggregate(total=Sum('base_amount'))['total'] or 0
     platform_fees = all_purchases.aggregate(total=Sum('platform_fee'))['total'] or 0
+    total_customer_charge_all = all_purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+    
     net_earnings = total_revenue_all - platform_fees
+    stripe_fees_paid = total_customer_charge_all - total_revenue_all
     
     active_events_count = Event.objects.filter(venue=venue, is_active=True).count()
     recent_transactions = all_purchases.order_by('-created_at')[:5]
@@ -252,12 +254,14 @@ def get_dashboard_stats(venue):
         } for activity in recent_activities],
         
         # Original fields
-        "total_tickets_sold": total_tickets_sold,
-        "total_revenue": float(total_revenue_all),
-        "platform_fees_paid": float(platform_fees),
-        "net_earnings": float(net_earnings),
-        "stripe_available_balance": stripe_available_balance,
-        "stripe_pending_balance": stripe_pending_balance,
+        'total_tickets_sold': total_tickets_sold,
+        'total_revenue': float(total_revenue_all),
+        'platform_fees_paid': float(platform_fees),
+        'stripe_fees_paid': float(stripe_fees_paid),
+        'net_earnings': float(net_earnings),
+        
+        'stripe_available_balance': stripe_available_balance,
+        'stripe_pending_balance': stripe_pending_balance,
         "active_events_count": active_events_count,
         "recent_transactions": TicketPurchaseSerializer(recent_transactions, many=True).data
     }

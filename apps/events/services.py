@@ -62,6 +62,7 @@ def create_ticket_purchase(user, tier_id, quantity):
             event=event,
             ticket_tier=tier,
             quantity=quantity,
+            base_amount=base_ticket_decimal,
             total_amount=total_customer_charge,
             platform_fee=platform_fee,
             funds_transferred_to_venue=False
