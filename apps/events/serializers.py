@@ -19,11 +19,12 @@ class EventRSVPSerializer(serializers.ModelSerializer):
 
 class EventTicketTierSerializer(serializers.ModelSerializer):
     available_quantity = serializers.SerializerMethodField(read_only=True)
+    id = serializers.UUIDField(required=False)
     
     class Meta:
         model = EventTicketTier
         fields = ['id', 'event', 'name', 'price', 'total_quantity', 'sold_quantity', 'available_quantity', 'description', 'created_at']
-        read_only_fields = ['id', 'event', 'sold_quantity', 'created_at']
+        read_only_fields = ['event', 'sold_quantity', 'created_at']
         
     @extend_schema_field(OpenApiTypes.INT)
     def get_available_quantity(self, obj):
@@ -41,10 +42,12 @@ class EventTicketTierSerializer(serializers.ModelSerializer):
         return max(0, available)
 
 class EventLineupSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(required=False)
+    
     class Meta:
         model = EventLineup
         fields = ['id', 'event', 'artist_name', 'artist_image', 'role', 'created_at']
-        read_only_fields = ['id', 'event', 'created_at']
+        read_only_fields = ['event', 'created_at']
 
 class TicketPurchaseSerializer(serializers.ModelSerializer):
     event_title = serializers.CharField(source='event.title', read_only=True)
@@ -74,8 +77,14 @@ class EventSerializer(serializers.ModelSerializer):
     )
     venue_name = serializers.CharField(source='venue.name', read_only=True)
     venue_image = serializers.ImageField(source='venue.profile_image', read_only=True)
-    ticket_tiers = EventTicketTierSerializer(many=True, read_only=True)
-    lineup = EventLineupSerializer(many=True, read_only=True)
+    ticket_tiers = EventTicketTierSerializer(many=True, required=False)
+    lineup = EventLineupSerializer(many=True, required=False)
+    remove_lineup_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
+    remove_ticket_tier_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
     rsvp_count = serializers.SerializerMethodField(read_only=True)
     user_rsvp_status = serializers.SerializerMethodField(read_only=True)
 
@@ -104,3 +113,72 @@ class EventSerializer(serializers.ModelSerializer):
             except EventRSVP.DoesNotExist:
                 return None
         return None
+
+    def create(self, validated_data):
+        ticket_tiers_data = validated_data.pop('ticket_tiers', [])
+        lineup_data = validated_data.pop('lineup', [])
+        categories = validated_data.pop('categories', [])
+        
+        event = Event.objects.create(**validated_data)
+        
+        if categories:
+            event.categories.set(categories)
+            
+        for tier_data in ticket_tiers_data:
+            EventTicketTier.objects.create(event=event, **tier_data)
+            
+        for artist_data in lineup_data:
+            EventLineup.objects.create(event=event, **artist_data)
+            
+        return event
+
+    def update(self, instance, validated_data):
+        ticket_tiers_data = validated_data.pop('ticket_tiers', None)
+        lineup_data = validated_data.pop('lineup', None)
+        categories = validated_data.pop('categories', None)
+        remove_lineup_ids = validated_data.pop('remove_lineup_ids', [])
+        remove_ticket_tier_ids = validated_data.pop('remove_ticket_tier_ids', [])
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if categories is not None:
+            instance.categories.set(categories)
+            
+        # Handle explicit deletions
+        if remove_ticket_tier_ids:
+            instance.ticket_tiers.filter(id__in=remove_ticket_tier_ids).delete()
+            
+        if remove_lineup_ids:
+            instance.lineup.filter(id__in=remove_lineup_ids).delete()
+            
+        if ticket_tiers_data is not None:
+            existing_tier_ids = [tier.id for tier in instance.ticket_tiers.all()]
+            
+            for tier_data in ticket_tiers_data:
+                tier_id = tier_data.get('id')
+                if tier_id and tier_id in existing_tier_ids:
+                    tier = EventTicketTier.objects.get(id=tier_id, event=instance)
+                    for attr, value in tier_data.items():
+                        setattr(tier, attr, value)
+                    tier.save()
+                else:
+                    tier_data.pop('id', None)
+                    EventTicketTier.objects.create(event=instance, **tier_data)
+            
+        if lineup_data is not None:
+            existing_lineup_ids = [artist.id for artist in instance.lineup.all()]
+            
+            for artist_data in lineup_data:
+                artist_id = artist_data.get('id')
+                if artist_id and artist_id in existing_lineup_ids:
+                    artist = EventLineup.objects.get(id=artist_id, event=instance)
+                    for attr, value in artist_data.items():
+                        setattr(artist, attr, value)
+                    artist.save()
+                else:
+                    artist_data.pop('id', None)
+                    EventLineup.objects.create(event=instance, **artist_data)
+
+        return instance
