@@ -1,12 +1,20 @@
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.decorators import action
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiExample
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Post, Comment, Story
-from .serializers import PostSerializer, CommentSerializer, StorySerializer
+from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer
 from .services import SocialService
 from apps.common.pagination import StandardResultsSetPagination
 
+@extend_schema_view(
+    list=extend_schema(tags=['Social Posts']),
+    retrieve=extend_schema(tags=['Social Posts']),
+    update=extend_schema(tags=['Social Posts']),
+    partial_update=extend_schema(tags=['Social Posts']),
+    destroy=extend_schema(tags=['Social Posts']),
+)
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all().select_related('author').prefetch_related('media', 'mentions', 'likes', 'comments')
     serializer_class = PostSerializer
@@ -23,8 +31,15 @@ class PostViewSet(viewsets.ModelViewSet):
             
         return queryset.order_by('-created_at')
 
+    @extend_schema(
+        summary="Create a new social post",
+        request=PostCreateSerializer,
+        responses={201: PostSerializer},
+        tags=['Social Posts']
+    )
     def create(self, request, *args, **kwargs):
         caption = request.data.get('caption', '')
+        mood = request.data.get('mood')
         visibility = request.data.get('visibility', 'public')
         tags = request.data.getlist('tags') if hasattr(request.data, 'getlist') else request.data.get('tags', [])
         location_venue_id = request.data.get('location_venue')
@@ -35,6 +50,7 @@ class PostViewSet(viewsets.ModelViewSet):
         post = SocialService.create_post(
             user=request.user,
             caption=caption,
+            mood=mood,
             media_files=media_files,
             visibility=visibility,
             tags=tags,
@@ -45,18 +61,36 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(post)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(summary="Like or Unlike a Post", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Social Actions'])
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def like(self, request, pk=None):
         liked = SocialService.toggle_like(request.user, pk)
         status_msg = 'liked' if liked else 'unliked'
         return Response({'status': status_msg})
 
+    @extend_schema(summary="Save or Unsave a Post", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Social Actions'])
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def save_post(self, request, pk=None):
         saved = SocialService.toggle_save_post(request.user, pk)
         status_msg = 'saved' if saved else 'unsaved'
         return Response({'status': status_msg})
 
+    @extend_schema(summary="Share a Post", request=None, responses={200: OpenApiTypes.OBJECT}, tags=['Social Actions'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
+    def share(self, request, pk=None):
+        post = self.get_object()
+        post.shares_count += 1
+        post.save(update_fields=['shares_count'])
+        return Response({'status': 'shared', 'shares_count': post.shares_count})
+
+@extend_schema_view(
+    list=extend_schema(tags=['Social Comments']),
+    retrieve=extend_schema(tags=['Social Comments']),
+    create=extend_schema(tags=['Social Comments']),
+    update=extend_schema(tags=['Social Comments']),
+    partial_update=extend_schema(tags=['Social Comments']),
+    destroy=extend_schema(tags=['Social Comments']),
+)
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -72,6 +106,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         post_id = self.kwargs.get('post_pk')
         serializer.save(user=self.request.user, post_id=post_id)
 
+@extend_schema_view(
+    list=extend_schema(tags=['Social Stories']),
+)
 class StoryViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = StorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -80,6 +117,12 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gene
         # Only return active stories
         return Story.objects.filter(expires_at__gt=timezone.now()).select_related('author').order_by('-created_at')
 
+    @extend_schema(
+        summary="Create a new story",
+        request=StoryCreateSerializer,
+        responses={201: StorySerializer},
+        tags=['Social Stories']
+    )
     def create(self, request, *args, **kwargs):
         media = request.FILES.get('media')
         if not media:

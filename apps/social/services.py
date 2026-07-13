@@ -7,16 +7,23 @@ from apps.venues.models import Venue
 class SocialService:
     @staticmethod
     @transaction.atomic
-    def create_post(user, caption, media_files=None, visibility='public', tags=None, location_venue_id=None, location_coordinates=None, event_id=None, mentions=None):
+    def create_post(user, caption, mood=None, media_files=None, visibility='public', tags=None, location_venue_id=None, location_coordinates=None, event_id=None, mentions=None):
         venue_profile = None
         if hasattr(user, 'venue_profile') and getattr(user, 'registration_type', 'user') == 'venue':
             venue_profile = user.venue_profile
+        else:
+            # For general users, enforce that they tag both a venue and an event.
+            if getattr(user, 'registration_type', 'user') == 'user':
+                from rest_framework.exceptions import ValidationError
+                if not location_venue_id or not event_id:
+                    raise ValidationError("General users must tag both an event and a venue to create a post.")
             
         post = Post.objects.create(
             author=user,
             venue_profile=venue_profile,
             event_id=event_id,
             caption=caption,
+            mood=mood,
             visibility=visibility,
             tags=tags if tags else [],
             location_venue_id=location_venue_id,

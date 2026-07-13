@@ -42,7 +42,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'author', 'venue_profile', 'event', 'caption', 'visibility', 'tags',
+            'id', 'author', 'venue_profile', 'event', 'caption', 'mood', 'visibility', 'tags',
             'location_venue', 'location_coordinates', 'media', 'mentions',
             'likes_count', 'comments_count', 'shares_count', 'is_liked', 'is_saved', 'recent_comments', 'created_at', 'updated_at'
         ]
@@ -78,3 +78,17 @@ class StorySerializer(serializers.ModelSerializer):
         model = Story
         fields = ['id', 'author', 'venue_profile', 'media', 'media_type', 'expires_at', 'created_at']
         read_only_fields = ['author', 'venue_profile', 'expires_at', 'created_at']
+
+class PostCreateSerializer(serializers.Serializer):
+    caption = serializers.CharField(required=False, allow_blank=True)
+    mood = serializers.CharField(required=False, max_length=10)
+    visibility = serializers.ChoiceField(choices=Post.VISIBILITY_CHOICES, default='public')
+    tags = serializers.ListField(child=serializers.CharField(max_length=50), required=False)
+    location_venue = serializers.UUIDField(required=False)
+    event = serializers.UUIDField(required=False)
+    mentions = serializers.ListField(child=serializers.UUIDField(), required=False)
+    media = serializers.ListField(child=serializers.FileField(), required=False)
+
+class StoryCreateSerializer(serializers.Serializer):
+    media = serializers.FileField(required=True)
+

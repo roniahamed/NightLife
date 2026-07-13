@@ -18,6 +18,7 @@ class Post(models.Model):
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, null=True, blank=True, related_name='event_posts')
     
     caption = models.TextField(blank=True)
+    mood = models.CharField(max_length=10, blank=True, null=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
     tags = ArrayField(models.CharField(max_length=50), blank=True, null=True, size=10)
     shares_count = models.PositiveIntegerField(default=0)
