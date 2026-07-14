@@ -174,5 +174,53 @@ def handle_stripe_webhook_event(payload, sig_header):
                 venue.save()
             except Venue.DoesNotExist:
                 pass
-                
     return 200
+def generate_ticket_qr(ticket_id):
+    """
+    Generates a QR code for a given ticket ID.
+    Returns the QR code image as bytes.
+    """
+    import qrcode
+    from io import BytesIO
+
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(str(ticket_id))
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def request_ticket_refund(user, purchase_id):
+    """
+    Validates and processes a refund via Stripe for the given purchase_id.
+    """
+    try:
+        purchase = TicketPurchase.objects.get(id=purchase_id, user=user)
+    except TicketPurchase.DoesNotExist:
+        raise TicketPurchaseError("Ticket purchase not found.")
+
+    if purchase.status != 'completed':
+        raise TicketPurchaseError(f"Cannot refund ticket with status: {purchase.status}")
+
+    if not purchase.stripe_payment_intent_id:
+        raise TicketPurchaseError("No Stripe payment intent found for this purchase.")
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        # Create a refund on the payment intent
+        refund = stripe.Refund.create(
+            payment_intent=purchase.stripe_payment_intent_id,
+        )
+        purchase.status = 'refunded'
+        purchase.save()
+        return purchase
+    except stripe.error.StripeError as e:
+        raise TicketPurchaseError(str(e))
+

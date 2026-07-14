@@ -103,8 +103,9 @@ class EventRSVPView(APIView):
         request=inline_serializer(name='EventRSVPRequest', fields={'is_going': rf_serializers.BooleanField()}),
         responses={200: OpenApiTypes.OBJECT}
     )
-    def post(self, request, pk):
-        event = get_object_or_404(Event, pk=pk)
+    def post(self, request, pk=None):
+        event_id = pk or request.data.get('event_id')
+        event = get_object_or_404(Event, pk=event_id)
         is_going = request.data.get('is_going')
         
         if is_going is None:
@@ -134,10 +135,14 @@ class EventTicketTierViewSet(viewsets.ModelViewSet):
         return [permissions.AllowAny()]
         
     def get_queryset(self):
-        return EventTicketTier.objects.filter(event_id=self.kwargs.get('event_pk'))
+        event_id = self.kwargs.get('event_pk') or self.request.query_params.get('event_id')
+        if event_id:
+            return EventTicketTier.objects.filter(event_id=event_id)
+        return EventTicketTier.objects.all()
         
     def perform_create(self, serializer):
-        event = get_object_or_404(Event, pk=self.kwargs.get('event_pk'))
+        event_id = self.kwargs.get('event_pk') or self.request.data.get('event_id')
+        event = get_object_or_404(Event, pk=event_id)
         if event.venue.owner != self.request.user:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You can only create tickets for your own events.")
@@ -215,3 +220,31 @@ class StripeWebhookView(APIView):
         
         status_code = handle_stripe_webhook_event(payload, sig_header)
         return Response(status=status_code)
+
+class TicketQRCodeView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
+    
+    @extend_schema(summary="Get Ticket QR Code", description="Returns the QR code image for a purchased ticket.", responses={200: OpenApiTypes.BINARY}, tags=['Event Tickets'])
+    def get(self, request, pk):
+        from .services import generate_ticket_qr
+        purchase = get_object_or_404(TicketPurchase, pk=pk, user=request.user)
+        qr_bytes = generate_ticket_qr(purchase.id)
+        
+        from django.http import HttpResponse
+        return HttpResponse(qr_bytes, content_type="image/png")
+
+class TicketRefundView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
+    
+    @extend_schema(summary="Request Ticket Refund", description="Requests a refund for a ticket purchase.", responses={200: OpenApiTypes.OBJECT}, tags=['Event Tickets'])
+    def post(self, request, pk):
+        from .services import request_ticket_refund, TicketPurchaseError
+        
+        try:
+            purchase = request_ticket_refund(request.user, pk)
+            return success_response(message="Refund processed successfully.")
+        except TicketPurchaseError as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
