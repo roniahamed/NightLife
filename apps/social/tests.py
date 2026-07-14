@@ -157,6 +157,17 @@ class SocialTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_create_text_story(self):
+        response = self.client.post('/api/social/stories/', {
+            'text_content': 'Hello this is a text story!',
+            'bg_color': '#FF5733'
+        })
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['media_type'], 'text')
+        self.assertEqual(response.data['text_content'], 'Hello this is a text story!')
+        self.assertEqual(response.data['bg_color'], '#FF5733')
+
     def test_list_posts(self):
         Post.objects.create(author=self.user, caption='User post')
         Post.objects.create(author=self.venue_user, caption='Venue post', venue_profile=self.venue)

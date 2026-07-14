@@ -145,12 +145,21 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.De
         tags=['Social Stories']
     )
     def create(self, request, *args, **kwargs):
+        serializer = StoryCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
         media = request.FILES.get('media')
-        if not media:
-            return Response({'error': 'Media file is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
+        text_content = serializer.validated_data.get('text_content')
+        bg_color = serializer.validated_data.get('bg_color')
+        
         active_profile = request.auth.payload.get('active_profile', 'user') if hasattr(request, 'auth') and request.auth else getattr(request.user, 'registration_type', 'user')
         
-        story = SocialService.create_story(request.user, media, active_profile=active_profile)
+        story = SocialService.create_story(
+            request.user, 
+            media=media, 
+            text_content=text_content, 
+            bg_color=bg_color, 
+            active_profile=active_profile
+        )
         serializer = self.get_serializer(story)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

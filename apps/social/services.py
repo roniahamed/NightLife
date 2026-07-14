@@ -87,26 +87,33 @@ class SocialService:
         return True # Saved
 
     @staticmethod
-    def create_story(user, media, expires_in_hours=24, active_profile='user'):
+    def create_story(user, media=None, text_content=None, bg_color=None, expires_in_hours=24, active_profile='user'):
         venue_profile = None
         if hasattr(user, 'venue_profile') and active_profile == 'venue':
             venue_profile = user.venue_profile
             
-        media_type = 'video' if str(media).lower().endswith(('.mp4', '.mov', '.avi')) else 'image'
+        if media:
+            media_type = 'video' if str(media).lower().endswith(('.mp4', '.mov', '.avi')) else 'image'
+        else:
+            media_type = 'text'
+            
         expires_at = timezone.now() + timezone.timedelta(hours=expires_in_hours)
         
         story = Story.objects.create(
             author=user,
             venue_profile=venue_profile,
             media=media,
+            text_content=text_content,
+            bg_color=bg_color,
             media_type=media_type,
             expires_at=expires_at
         )
         
         # Generate thumbnail
-        thumbnail_file = generate_thumbnail(story.media, media_type)
-        if thumbnail_file:
-            story.thumbnail.save(thumbnail_file.name, thumbnail_file, save=True)
+        if media:
+            thumbnail_file = generate_thumbnail(story.media, media_type)
+            if thumbnail_file:
+                story.thumbnail.save(thumbnail_file.name, thumbnail_file, save=True)
             
         return story
 

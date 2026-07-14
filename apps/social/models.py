@@ -40,6 +40,7 @@ class PostMedia(models.Model):
     MEDIA_TYPE_CHOICES = (
         ('image', 'Image'),
         ('video', 'Video'),
+        ('text', 'Text'),
     )
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     file = models.FileField(upload_to='social/posts/')
@@ -94,7 +95,9 @@ class Story(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stories')
     venue_profile = models.ForeignKey('venues.Venue', on_delete=models.SET_NULL, null=True, blank=True, related_name='venue_stories')
     
-    media = models.FileField(upload_to='social/stories/')
+    media = models.FileField(upload_to='social/stories/', blank=True, null=True)
+    text_content = models.TextField(blank=True, null=True)
+    bg_color = models.CharField(max_length=20, blank=True, null=True)
     thumbnail = models.ImageField(upload_to='social/thumbnails/', null=True, blank=True)
     media_type = models.CharField(max_length=10, choices=PostMedia.MEDIA_TYPE_CHOICES, default='image')
     expires_at = models.DateTimeField()

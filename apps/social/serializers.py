@@ -76,7 +76,7 @@ class StorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Story
-        fields = ['id', 'author', 'venue_profile', 'media', 'thumbnail', 'media_type', 'expires_at', 'created_at']
+        fields = ['id', 'author', 'venue_profile', 'media', 'text_content', 'bg_color', 'thumbnail', 'media_type', 'expires_at', 'created_at']
         read_only_fields = ['author', 'venue_profile', 'expires_at', 'created_at']
 
 class StoryFeedGroupSerializer(serializers.Serializer):
@@ -95,5 +95,11 @@ class PostCreateSerializer(serializers.Serializer):
     media = serializers.ListField(child=serializers.FileField(), required=False)
 
 class StoryCreateSerializer(serializers.Serializer):
-    media = serializers.FileField(required=True)
+    media = serializers.FileField(required=False)
+    text_content = serializers.CharField(required=False)
+    bg_color = serializers.CharField(max_length=20, required=False)
 
+    def validate(self, data):
+        if not data.get('media') and not data.get('text_content'):
+            raise serializers.ValidationError("Either media or text_content must be provided.")
+        return data
