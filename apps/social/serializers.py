@@ -79,6 +79,11 @@ class StorySerializer(serializers.ModelSerializer):
         fields = ['id', 'author', 'venue_profile', 'media', 'thumbnail', 'media_type', 'expires_at', 'created_at']
         read_only_fields = ['author', 'venue_profile', 'expires_at', 'created_at']
 
+class StoryFeedGroupSerializer(serializers.Serializer):
+    user = UserPublicProfileSerializer(required=False, allow_null=True)
+    venue = VenueSerializer(required=False, allow_null=True)
+    stories = StorySerializer(many=True)
+
 class PostCreateSerializer(serializers.Serializer):
     caption = serializers.CharField(required=False, allow_blank=True)
     mood = serializers.CharField(required=False, max_length=10)

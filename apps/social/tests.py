@@ -199,9 +199,41 @@ class SocialTests(TestCase):
     def test_list_stories(self):
         from .models import Story
         Story.objects.create(author=self.user, expires_at=timezone.now() + timedelta(hours=24))
+        Story.objects.create(author=self.user, expires_at=timezone.now() + timedelta(hours=24))
         # Expired story
         Story.objects.create(author=self.user, expires_at=timezone.now() - timedelta(hours=1))
         
+        # Another user's story
+        Story.objects.create(author=self.venue_user, expires_at=timezone.now() + timedelta(hours=24), venue_profile=self.venue)
+        
         response = self.client.get('/api/social/stories/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
+        # Should have 2 groups (testuser and venueuser)
+        self.assertEqual(len(response.data), 2)
+        # testuser group should have 2 stories
+        user_group = next(g for g in response.data if g.get('user') is not None)
+        self.assertEqual(len(user_group['stories']), 2)
+        # venueuser group should have 1 story
+        venue_group = next(g for g in response.data if g.get('venue') is not None)
+        self.assertEqual(len(venue_group['stories']), 1)
+
+    def test_retrieve_story(self):
+        from .models import Story
+        story = Story.objects.create(author=self.user, expires_at=timezone.now() + timedelta(hours=24))
+        response = self.client.get(f'/api/social/stories/{story.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], str(story.id))
+
+    def test_delete_story_by_owner(self):
+        from .models import Story
+        story = Story.objects.create(author=self.user, expires_at=timezone.now() + timedelta(hours=24))
+        response = self.client.delete(f'/api/social/stories/{story.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Story.objects.count(), 0)
+
+    def test_delete_story_by_other_user_fails(self):
+        from .models import Story
+        story = Story.objects.create(author=self.venue_user, expires_at=timezone.now() + timedelta(hours=24))
+        response = self.client.delete(f'/api/social/stories/{story.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Story.objects.count(), 1)

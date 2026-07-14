@@ -4,9 +4,11 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Post, Comment, Story
-from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer
+from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer, StoryFeedGroupSerializer
 from .services import SocialService
 from apps.common.pagination import StandardResultsSetPagination
+from apps.common.permissions import IsOwnerOrReadOnly
+from django_filters.rest_framework import DjangoFilterBackend
 
 @extend_schema_view(
     list=extend_schema(tags=['Social Posts']),
@@ -20,6 +22,8 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['author', 'venue_profile']
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -110,15 +114,29 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user, post_id=post_id)
 
 @extend_schema_view(
-    list=extend_schema(tags=['Social Stories']),
+    list=extend_schema(
+        tags=['Social Stories'],
+        responses={200: StoryFeedGroupSerializer(many=True)},
+        summary="List grouped active stories"
+    ),
+    retrieve=extend_schema(tags=['Social Stories']),
+    destroy=extend_schema(tags=['Social Stories']),
 )
-class StoryViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = StorySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['author', 'venue_profile']
 
     def get_queryset(self):
         # Only return active stories
-        return Story.objects.filter(expires_at__gt=timezone.now()).select_related('author').order_by('-created_at')
+        return Story.objects.filter(expires_at__gt=timezone.now()).select_related('author', 'venue_profile').order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        formatted_data = SocialService.group_stories(queryset)
+        serializer = StoryFeedGroupSerializer(formatted_data, many=True, context=self.get_serializer_context())
+        return Response(serializer.data)
 
     @extend_schema(
         summary="Create a new story",

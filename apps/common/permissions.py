@@ -11,8 +11,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return True
             
         # Write permissions are only allowed to the owner of the snippet
-        # Will check `owner` first, fallback to `user`
-        owner = getattr(obj, 'owner', getattr(obj, 'user', None))
+        # Will check `owner` first, fallback to `user`, then `author`
+        owner = getattr(obj, 'owner', getattr(obj, 'user', getattr(obj, 'author', None)))
         return owner == request.user
 
 class IsAdminOrReadOnly(permissions.BasePermission):

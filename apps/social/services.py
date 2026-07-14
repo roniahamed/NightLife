@@ -109,3 +109,27 @@ class SocialService:
             story.thumbnail.save(thumbnail_file.name, thumbnail_file, save=True)
             
         return story
+
+    @staticmethod
+    def group_stories(queryset):
+        grouped_stories = {}
+        
+        for story in queryset:
+            key = f"venue_{story.venue_profile.id}" if story.venue_profile else f"user_{story.author.id}"
+            if key not in grouped_stories:
+                grouped_stories[key] = {
+                    "user": getattr(story.author, 'public_profile', None) if not story.venue_profile else None,
+                    "venue": story.venue_profile,
+                    "stories": []
+                }
+            grouped_stories[key]["stories"].append(story)
+            
+        formatted_data = []
+        for key, data in grouped_stories.items():
+            formatted_data.append({
+                "user": data["stories"][0].author if not data["venue"] else None,
+                "venue": data["venue"],
+                "stories": data["stories"]
+            })
+            
+        return formatted_data
