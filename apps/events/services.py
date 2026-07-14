@@ -224,3 +224,28 @@ def request_ticket_refund(user, purchase_id):
     except stripe.error.StripeError as e:
         raise TicketPurchaseError(str(e))
 
+def scan_ticket(user, ticket_id):
+    """
+    Validates and scans a ticket.
+    Returns the updated TicketPurchase instance.
+    """
+    try:
+        purchase = TicketPurchase.objects.select_related('event__venue').get(id=ticket_id)
+    except TicketPurchase.DoesNotExist:
+        raise TicketPurchaseError("Invalid ticket. This ticket does not exist in our records.")
+        
+    if purchase.event.venue.owner != user:
+        raise TicketPurchaseError("Permission denied. You can only scan tickets for your own events.")
+        
+    if purchase.status != 'completed':
+        raise TicketPurchaseError(f"This ticket cannot be scanned because its payment status is '{purchase.status}'.")
+        
+    if purchase.is_scanned:
+        raise TicketPurchaseError("This ticket has already been scanned and cannot be reused.")
+        
+    purchase.is_scanned = True
+    purchase.scanned_at = timezone.now()
+    purchase.save(update_fields=['is_scanned', 'scanned_at'])
+    
+    return purchase
+

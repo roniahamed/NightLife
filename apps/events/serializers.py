@@ -61,11 +61,11 @@ class TicketPurchaseSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'user_email', 'event', 'event_title', 'ticket_tier', 
             'ticket_tier_name', 'quantity', 'total_amount', 'platform_fee', 
-            'stripe_fee', 'status', 'created_at'
+            'stripe_fee', 'status', 'is_scanned', 'scanned_at', 'created_at'
         ]
         read_only_fields = [
             'id', 'user', 'event', 'ticket_tier', 'total_amount', 
-            'platform_fee', 'status', 'created_at'
+            'platform_fee', 'status', 'is_scanned', 'scanned_at', 'created_at'
         ]
 
     @extend_schema_field(OpenApiTypes.DECIMAL)
@@ -73,6 +73,18 @@ class TicketPurchaseSerializer(serializers.ModelSerializer):
         if obj.total_amount and obj.base_amount:
             return obj.total_amount - obj.base_amount
         return 0
+
+class AttendeeSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    ticket_tier_name = serializers.CharField(source='ticket_tier.name', read_only=True)
+    
+    class Meta:
+        model = TicketPurchase
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'ticket_tier_name', 
+            'quantity', 'status', 'is_scanned', 'scanned_at', 'created_at'
+        ]
 
 class EventSerializer(serializers.ModelSerializer):
     categories = EventCategorySerializer(many=True, read_only=True)

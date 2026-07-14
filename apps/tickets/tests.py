@@ -116,3 +116,62 @@ class TicketingAPITestCase(TestCase):
         
         purchase.refresh_from_db()
         self.assertEqual(purchase.status, 'refunded')
+
+    def test_scan_ticket_success(self):
+        purchase = TicketPurchase.objects.create(
+            user=self.user, event=self.event, ticket_tier=self.tier,
+            quantity=1, total_amount=Decimal('21.00'), platform_fee=Decimal('1.00'),
+            status='completed', stripe_payment_intent_id='pi_123'
+        )
+        
+        # Authenticate as venue owner
+        self.client.force_authenticate(user=self.owner)
+        url = reverse('ticket-scan', kwargs={'pk': str(purchase.id)})
+        response = self.client.post(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'success')
+        
+        purchase.refresh_from_db()
+        self.assertTrue(purchase.is_scanned)
+        self.assertIsNotNone(purchase.scanned_at)
+
+    def test_scan_ticket_permission_denied(self):
+        purchase = TicketPurchase.objects.create(
+            user=self.user, event=self.event, ticket_tier=self.tier,
+            quantity=1, total_amount=Decimal('21.00'), platform_fee=Decimal('1.00'),
+            status='completed', stripe_payment_intent_id='pi_123'
+        )
+        
+        # Authenticate as normal user (not owner)
+        self.client.force_authenticate(user=self.user)
+        url = reverse('ticket-scan', kwargs={'pk': str(purchase.id)})
+        response = self.client.post(url)
+        
+        # Expect permission denied from permissions class (IsActiveProfileVenue)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+        purchase.refresh_from_db()
+        self.assertFalse(purchase.is_scanned)
+
+    def test_get_attendees_list(self):
+        # User buys 2 tickets
+        TicketPurchase.objects.create(
+            user=self.user, event=self.event, ticket_tier=self.tier,
+            quantity=2, total_amount=Decimal('42.00'), platform_fee=Decimal('2.00'),
+            status='completed', stripe_payment_intent_id='pi_123'
+        )
+        
+        # Authenticate as venue owner
+        self.client.force_authenticate(user=self.owner)
+        
+        # Assuming event attendees URL is routed as /api/events/<pk>/attendees/
+        # `EventViewSet` is registered under `apps/events/urls.py` as 'events' router.
+        # So reverse name would be 'events-attendees'
+        url = reverse('events-attendees', kwargs={'pk': str(self.event.id)})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['data']), 1)
+        self.assertEqual(response.data['data'][0]['quantity'], 2)
+        self.assertEqual(response.data['data'][0]['user_email'], 'test@example.com')

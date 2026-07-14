@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
@@ -15,7 +16,7 @@ from .models import (
 from .serializers import (
     EventCategorySerializer, EventSerializer, 
     EventRSVPSerializer, EventTicketTierSerializer, TicketPurchaseSerializer,
-    EventLineupSerializer
+    EventLineupSerializer, AttendeeSerializer
 )
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.pagination import StandardResultsSetPagination
@@ -92,6 +93,18 @@ class EventViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You can only delete events for your own venue.")
         instance.delete()
+
+    @extend_schema(summary="Get Event Attendees", description="Returns a list of attendees for an event. Requires active_profile='venue'.", tags=['Events'], responses={200: AttendeeSerializer(many=True)})
+    @action(detail=True, methods=['get'])
+    def attendees(self, request, pk=None):
+        event = self.get_object()
+        if event.venue.owner != request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You can only view attendees for your own events.")
+        
+        purchases = TicketPurchase.objects.filter(event=event, status='completed').select_related('user', 'ticket_tier')
+        serializer = AttendeeSerializer(purchases, many=True)
+        return success_response(data=serializer.data)
 
 class EventRSVPView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsActiveProfileUser]
@@ -248,3 +261,18 @@ class TicketRefundView(APIView):
         except Exception as e:
             return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class TicketScanView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsActiveProfileVenue]
+    
+    @extend_schema(summary="Scan Ticket", description="Scans a ticket. Requires active_profile='venue'.", responses={200: TicketPurchaseSerializer}, tags=['Event Tickets'])
+    def post(self, request, pk):
+        from .services import scan_ticket, TicketPurchaseError
+        
+        try:
+            purchase = scan_ticket(request.user, pk)
+            serializer = TicketPurchaseSerializer(purchase)
+            return success_response(message="Ticket scanned successfully.", data=serializer.data)
+        except TicketPurchaseError as e:
+            return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

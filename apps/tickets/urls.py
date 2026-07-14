@@ -1,7 +1,7 @@
 from django.urls import path
 from apps.events.views import (
     EventTicketTierViewSet, EventRSVPView, TicketPurchaseViewSet,
-    TicketQRCodeView, TicketRefundView
+    TicketQRCodeView, TicketRefundView, TicketScanView
 )
 
 ticket_types_list = EventTicketTierViewSet.as_view({'get': 'list'})
@@ -15,4 +15,5 @@ urlpatterns = [
     path('history/', ticket_history_list, name='ticket-history'),
     path('<str:pk>/qr/', TicketQRCodeView.as_view(), name='ticket-qr'),
     path('<str:pk>/refund/', TicketRefundView.as_view(), name='ticket-refund'),
+    path('<str:pk>/scan/', TicketScanView.as_view(), name='ticket-scan'),
 ]
