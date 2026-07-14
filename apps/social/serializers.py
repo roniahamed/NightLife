@@ -7,7 +7,7 @@ from apps.events.serializers import EventSerializer
 class PostMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostMedia
-        fields = ['id', 'file', 'media_type', 'order']
+        fields = ['id', 'file', 'thumbnail', 'media_type', 'order']
 
 class PostMentionSerializer(serializers.ModelSerializer):
     user = UserPublicProfileSerializer(read_only=True)
@@ -76,7 +76,7 @@ class StorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Story
-        fields = ['id', 'author', 'venue_profile', 'media', 'media_type', 'expires_at', 'created_at']
+        fields = ['id', 'author', 'venue_profile', 'media', 'thumbnail', 'media_type', 'expires_at', 'created_at']
         read_only_fields = ['author', 'venue_profile', 'expires_at', 'created_at']
 
 class PostCreateSerializer(serializers.Serializer):

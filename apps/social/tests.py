@@ -9,6 +9,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from apps.events.models import Event
 from django.utils import timezone
 from datetime import timedelta
+from PIL import Image
+from io import BytesIO
+
+def get_dummy_image():
+    file = BytesIO()
+    image = Image.new('RGB', size=(100, 100), color=(255, 0, 0))
+    image.save(file, 'jpeg')
+    file.name = 'test.jpg'
+    file.seek(0)
+    return file.read()
 
 User = get_user_model()
 
@@ -44,6 +54,20 @@ class SocialTests(TestCase):
         self.assertEqual(Post.objects.first().mood, '🔥')
         self.assertEqual(Post.objects.first().visibility, 'public')
         self.assertEqual(Post.objects.first().tags, ['test', 'django'])
+
+    def test_create_post_with_media_generates_thumbnail(self):
+        media_file = SimpleUploadedFile("test_media.jpg", get_dummy_image(), content_type="image/jpeg")
+        response = self.client.post('/api/social/posts/', {
+            'caption': 'Post with media',
+            'venue': self.venue.id,
+            'media': [media_file]
+        }, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.first()
+        self.assertEqual(post.media.count(), 1)
+        media_obj = post.media.first()
+        self.assertIsNotNone(media_obj.thumbnail)
+        self.assertTrue(media_obj.thumbnail.name.startswith('social/thumbnails/'))
 
     def test_create_post_general_user_without_tags_fails(self):
         response = self.client.post('/api/social/posts/', {
@@ -124,7 +148,7 @@ class SocialTests(TestCase):
         
     def test_create_story(self):
         # Create a dummy image file
-        image_content = b'dummy_image_data'
+        image_content = get_dummy_image()
         media_file = SimpleUploadedFile("test_story.jpg", image_content, content_type="image/jpeg")
         
         response = self.client.post('/api/social/stories/', {

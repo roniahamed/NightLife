@@ -44,6 +44,7 @@ class PostMedia(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     file = models.FileField(upload_to='social/posts/')
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default='image')
+    thumbnail = models.ImageField(upload_to='social/thumbnails/', null=True, blank=True)
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -94,6 +95,7 @@ class Story(models.Model):
     venue_profile = models.ForeignKey('venues.Venue', on_delete=models.SET_NULL, null=True, blank=True, related_name='venue_stories')
     
     media = models.FileField(upload_to='social/stories/')
+    thumbnail = models.ImageField(upload_to='social/thumbnails/', null=True, blank=True)
     media_type = models.CharField(max_length=10, choices=PostMedia.MEDIA_TYPE_CHOICES, default='image')
     expires_at = models.DateTimeField()
     

@@ -3,6 +3,7 @@ from django.utils import timezone
 from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Story
 from apps.users.models import User
 from apps.venues.models import Venue
+from .utils import generate_thumbnail
 
 class SocialService:
     @staticmethod
@@ -43,7 +44,13 @@ class SocialService:
             for index, file in enumerate(media_files):
                 # Simple logic to determine if it's a video based on extension
                 media_type = 'video' if str(file).lower().endswith(('.mp4', '.mov', '.avi')) else 'image'
-                PostMedia.objects.create(post=post, file=file, media_type=media_type, order=index)
+                media_obj = PostMedia.objects.create(post=post, file=file, media_type=media_type, order=index)
+                
+                # Generate thumbnail
+                thumbnail_file = generate_thumbnail(media_obj.file, media_type)
+                if thumbnail_file:
+                    media_obj.thumbnail.save(thumbnail_file.name, thumbnail_file, save=True)
+                
                 
         if mentions:
             for user_id in mentions:
@@ -95,4 +102,10 @@ class SocialService:
             media_type=media_type,
             expires_at=expires_at
         )
+        
+        # Generate thumbnail
+        thumbnail_file = generate_thumbnail(story.media, media_type)
+        if thumbnail_file:
+            story.thumbnail.save(thumbnail_file.name, thumbnail_file, save=True)
+            
         return story
