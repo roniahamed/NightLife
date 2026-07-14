@@ -42,13 +42,16 @@ class PostViewSet(viewsets.ModelViewSet):
         mood = request.data.get('mood')
         visibility = request.data.get('visibility', 'public')
         tags = request.data.getlist('tags') if hasattr(request.data, 'getlist') else request.data.get('tags', [])
-        location_venue_id = request.data.get('location_venue')
+        location_venue_id = request.data.get('venue')
         event_id = request.data.get('event')
         mentions = request.data.getlist('mentions') if hasattr(request.data, 'getlist') else request.data.get('mentions', [])
         media_files = request.FILES.getlist('media')
 
+        active_profile = request.auth.payload.get('active_profile', 'user') if hasattr(request, 'auth') and request.auth else getattr(request.user, 'registration_type', 'user')
+
         post = SocialService.create_post(
             user=request.user,
+            active_profile=active_profile,
             caption=caption,
             mood=mood,
             media_files=media_files,
@@ -128,6 +131,8 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gene
         if not media:
             return Response({'error': 'Media file is required'}, status=status.HTTP_400_BAD_REQUEST)
             
-        story = SocialService.create_story(request.user, media)
+        active_profile = request.auth.payload.get('active_profile', 'user') if hasattr(request, 'auth') and request.auth else getattr(request.user, 'registration_type', 'user')
+        
+        story = SocialService.create_story(request.user, media, active_profile=active_profile)
         serializer = self.get_serializer(story)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

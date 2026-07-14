@@ -84,8 +84,8 @@ class PostCreateSerializer(serializers.Serializer):
     mood = serializers.CharField(required=False, max_length=10)
     visibility = serializers.ChoiceField(choices=Post.VISIBILITY_CHOICES, default='public')
     tags = serializers.ListField(child=serializers.CharField(max_length=50), required=False)
-    location_venue = serializers.UUIDField(required=False)
-    event = serializers.UUIDField(required=False)
+    venue = serializers.UUIDField(required=False, help_text="Venue ID. General users must provide either venue or event.")
+    event = serializers.UUIDField(required=False, help_text="Event ID. General users must provide either venue or event.")
     mentions = serializers.ListField(child=serializers.UUIDField(), required=False)
     media = serializers.ListField(child=serializers.FileField(), required=False)
 

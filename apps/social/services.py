@@ -7,16 +7,25 @@ from apps.venues.models import Venue
 class SocialService:
     @staticmethod
     @transaction.atomic
-    def create_post(user, caption, mood=None, media_files=None, visibility='public', tags=None, location_venue_id=None, location_coordinates=None, event_id=None, mentions=None):
+    def create_post(user, caption, mood=None, media_files=None, visibility='public', tags=None, location_venue_id=None, location_coordinates=None, event_id=None, mentions=None, active_profile='user'):
+        from rest_framework.exceptions import ValidationError
+        from apps.events.models import Event
+        from apps.venues.models import Venue
+
         venue_profile = None
-        if hasattr(user, 'venue_profile') and getattr(user, 'registration_type', 'user') == 'venue':
+        if hasattr(user, 'venue_profile') and active_profile == 'venue':
             venue_profile = user.venue_profile
         else:
-            # For general users, enforce that they tag both a venue and an event.
-            if getattr(user, 'registration_type', 'user') == 'user':
-                from rest_framework.exceptions import ValidationError
-                if not location_venue_id or not event_id:
-                    raise ValidationError("General users must tag both an event and a venue to create a post.")
+            # For general users, enforce that they tag either a venue or an event.
+            if active_profile == 'user':
+                if not location_venue_id and not event_id:
+                    raise ValidationError("General users must tag either an event or a venue to create a post.")
+        
+        # Validate foreign keys to avoid IntegrityError
+        if event_id and not Event.objects.filter(id=event_id).exists():
+            raise ValidationError("The specified event does not exist.")
+        if location_venue_id and not Venue.objects.filter(id=location_venue_id).exists():
+            raise ValidationError("The specified venue does not exist.")
             
         post = Post.objects.create(
             author=user,
@@ -71,9 +80,9 @@ class SocialService:
         return True # Saved
 
     @staticmethod
-    def create_story(user, media, expires_in_hours=24):
+    def create_story(user, media, expires_in_hours=24, active_profile='user'):
         venue_profile = None
-        if hasattr(user, 'venue_profile') and getattr(user, 'registration_type', 'user') == 'venue':
+        if hasattr(user, 'venue_profile') and active_profile == 'venue':
             venue_profile = user.venue_profile
             
         media_type = 'video' if str(media).lower().endswith(('.mp4', '.mov', '.avi')) else 'image'

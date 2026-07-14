@@ -36,7 +36,7 @@ class SocialTests(TestCase):
             'visibility': 'public',
             'tags': ['test', 'django'],
             'event': self.event.id,
-            'location_venue': self.venue.id
+            'venue': self.venue.id
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Post.objects.count(), 1)
@@ -52,7 +52,17 @@ class SocialTests(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Post.objects.count(), 0)
-        self.assertIn("General users must tag both an event and a venue to create a post.", str(response.data))
+        self.assertIn("General users must tag either an event or a venue to create a post.", str(response.data))
+
+    def test_create_post_general_user_only_venue_succeeds(self):
+        response = self.client.post('/api/social/posts/', {
+            'caption': 'Venue only post',
+            'visibility': 'public',
+            'venue': self.venue.id
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Post.objects.count(), 1)
+        self.assertEqual(Post.objects.first().caption, 'Venue only post')
 
     def test_create_post_venue_user_without_tags_succeeds(self):
         self.client.force_authenticate(user=self.venue_user)
@@ -122,3 +132,52 @@ class SocialTests(TestCase):
         }, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_list_posts(self):
+        Post.objects.create(author=self.user, caption='User post')
+        Post.objects.create(author=self.venue_user, caption='Venue post', venue_profile=self.venue)
+        
+        response = self.client.get('/api/social/posts/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+
+        # Test venue feed filter
+        response = self.client.get('/api/social/posts/?venue_feed=true')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['caption'], 'Venue post')
+
+    def test_list_comments(self):
+        post = Post.objects.create(author=self.user, caption='Test post')
+        Comment.objects.create(user=self.user, post=post, text='First comment')
+        Comment.objects.create(user=self.venue_user, post=post, text='Second comment')
+        
+        response = self.client.get(f'/api/social/posts/{post.id}/comments/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_reply_to_comment(self):
+        post = Post.objects.create(author=self.user, caption='Test post')
+        parent_comment = Comment.objects.create(user=self.user, post=post, text='Parent comment')
+        
+        response = self.client.post(f'/api/social/posts/{post.id}/comments/', {
+            'text': 'Reply comment',
+            'parent': parent_comment.id
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Comment.objects.count(), 2)
+        
+        # Ensure the reply isn't fetched as a top-level comment
+        response = self.client.get(f'/api/social/posts/{post.id}/comments/')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['replies_count'], 1)
+
+    def test_list_stories(self):
+        from .models import Story
+        Story.objects.create(author=self.user, expires_at=timezone.now() + timedelta(hours=24))
+        # Expired story
+        Story.objects.create(author=self.user, expires_at=timezone.now() - timedelta(hours=1))
+        
+        response = self.client.get('/api/social/stories/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
