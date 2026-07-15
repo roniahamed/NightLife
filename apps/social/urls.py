@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PostViewSet, CommentViewSet, StoryViewSet
+from .views import PostViewSet, CommentViewSet, StoryViewSet, ForYouFeedView
 
 # Nested router for comments on posts
 from rest_framework_nested import routers
@@ -13,6 +13,7 @@ post_router = routers.NestedDefaultRouter(router, r'posts', lookup='post')
 post_router.register(r'comments', CommentViewSet, basename='post-comments')
 
 urlpatterns = [
+    path('for-you/', ForYouFeedView.as_view(), name='for_you_feed'),
     path('', include(router.urls)),
     path('', include(post_router.urls)),
 ]

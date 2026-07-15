@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status, mixins
+from rest_framework import viewsets, permissions, status, mixins, generics
 from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiExample
 from rest_framework.response import Response
@@ -6,7 +6,7 @@ from django.utils import timezone
 from .models import Post, Comment, Story
 from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer, StoryFeedGroupSerializer
 from .services import SocialService
-from apps.common.pagination import StandardResultsSetPagination
+from apps.common.pagination import StandardResultsSetPagination, CursorSetPagination
 from apps.common.permissions import IsOwnerOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -163,3 +163,21 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.De
         )
         serializer = self.get_serializer(story)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class ForYouFeedView(generics.ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = CursorSetPagination
+
+    @extend_schema(
+        summary="Get For You Feed",
+        description="Returns an optimized, cursor-paginated feed of venue posts based on user preferences.",
+        responses={200: PostSerializer(many=True)},
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
+        ],
+        tags=['Social Posts']
+    )
+    def get_queryset(self):
+        return SocialService.get_for_you_feed(self.request.user)
+

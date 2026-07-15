@@ -49,23 +49,34 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'venue_profile', 'created_at', 'updated_at']
 
     def get_recent_comments(self, obj):
-        # Return the 3 most recent top-level comments
-        comments = obj.comments.filter(parent__isnull=True).order_by('-created_at')[:3]
+        # Use prefetched recent comments if available, else query DB
+        if hasattr(obj, 'prefetched_recent_comments'):
+            comments = obj.prefetched_recent_comments
+        else:
+            comments = obj.comments.filter(parent__isnull=True).order_by('-created_at')[:3]
         return CommentSerializer(comments, many=True, context=self.context).data
 
     def get_likes_count(self, obj) -> int:
+        if hasattr(obj, 'likes_count_annotated'):
+            return obj.likes_count_annotated
         return obj.likes.count()
 
     def get_comments_count(self, obj) -> int:
+        if hasattr(obj, 'comments_count_annotated'):
+            return obj.comments_count_annotated
         return obj.comments.count()
 
     def get_is_liked(self, obj) -> bool:
+        if hasattr(obj, 'is_liked_annotated'):
+            return obj.is_liked_annotated
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Like.objects.filter(post=obj, user=request.user).exists()
         return False
 
     def get_is_saved(self, obj) -> bool:
+        if hasattr(obj, 'is_saved_annotated'):
+            return obj.is_saved_annotated
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return SavedPost.objects.filter(post=obj, user=request.user).exists()

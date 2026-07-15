@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Count, Prefetch
 from django.utils import timezone
 from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Story
 from apps.users.models import User
@@ -140,3 +141,28 @@ class SocialService:
             })
             
         return formatted_data
+
+    @staticmethod
+    def get_for_you_feed(user):
+        qs = Post.objects.filter(venue_profile__isnull=False).select_related(
+            'author', 'venue_profile'
+        ).prefetch_related(
+            'media', 'mentions'
+        ).annotate(
+            likes_count_annotated=Count('likes', distinct=True),
+            comments_count_annotated=Count('comments', distinct=True)
+        )
+
+        # Prefetch recent comments to avoid N+1 queries in the serializer
+        recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
+        qs = qs.prefetch_related(
+            Prefetch('comments', queryset=recent_comments_qs, to_attr='prefetched_recent_comments')
+        )
+
+        # Apply preference: if user follows venues, prioritize/filter them
+        if hasattr(user, 'venue_follows'):
+            followed_venue_ids = user.venue_follows.values_list('venue_id', flat=True)
+            if followed_venue_ids.exists():
+                qs = qs.filter(venue_profile_id__in=followed_venue_ids)
+                
+        return qs.order_by('-created_at')
