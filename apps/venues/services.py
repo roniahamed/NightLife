@@ -339,3 +339,89 @@ def unfollow_venue(user, venue):
         stats.followers_count = venue.followers.count()
         stats.save()
 
+class HeatmapService:
+    @staticmethod
+    def get_heatmap_data(latitude, longitude, radius_km=5.0):
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.measure import D
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.db.models import Count, Q, F, FloatField, IntegerField, Case, When, Value, Sum
+        from django.db.models.functions import Coalesce
+        from django.db import models
+
+        now = timezone.now()
+        yesterday = now - timedelta(days=1)
+        last_week = now - timedelta(days=7)
+
+        try:
+            point = Point(float(longitude), float(latitude), srid=4326)
+        except (ValueError, TypeError):
+            return Venue.objects.none()
+
+        # Base Queryset
+        qs = Venue.objects.filter(
+            location__distance_lte=(point, D(km=radius_km)),
+            is_active=True
+        )
+
+        # Annotations for recent activity
+        qs = qs.annotate(
+            # Ticket purchases in the last 24h
+            recent_tickets_sold=Coalesce(Sum(
+                'events__ticket_purchases__quantity',
+                filter=Q(events__ticket_purchases__created_at__gte=yesterday, events__ticket_purchases__status='completed')
+            ), 0),
+            
+            # Active events right now
+            active_events_count=Count(
+                'events',
+                filter=Q(events__start_time__lte=now, events__end_time__gte=now, events__is_active=True),
+                distinct=True
+            ),
+            
+            # Posts from the last 24h
+            recent_posts=Count(
+                'tagged_posts',
+                filter=Q(tagged_posts__created_at__gte=yesterday),
+                distinct=True
+            ),
+            
+            # Reviews from the last 7 days
+            recent_reviews=Count(
+                'reviews',
+                filter=Q(reviews__created_at__gte=last_week),
+                distinct=True
+            ),
+            
+            # Total Followers
+            total_followers=Count('followers', distinct=True)
+        )
+
+        # Calculate dynamic heat score
+        qs = qs.annotate(
+            calculated_heat_score=F('recent_tickets_sold') * 5 +
+                                  F('active_events_count') * 20 +
+                                  F('recent_posts') * 2 +
+                                  F('recent_reviews') * 3 +
+                                  F('total_followers') / 10
+        )
+        
+        # Determine Zone based on calculated_heat_score
+        qs = qs.annotate(
+            heat_zone=Case(
+                When(calculated_heat_score__gte=100, then=Value('Insane')),
+                When(calculated_heat_score__gte=50, then=Value('Hot')),
+                When(calculated_heat_score__gte=20, then=Value('Active')),
+                default=Value('Mild'),
+                output_field=models.CharField()
+            )
+        )
+
+        from apps.events.models import Event
+        active_events_qs = Event.objects.filter(start_time__lte=now, end_time__gte=now, is_active=True)
+        qs = qs.prefetch_related(
+            models.Prefetch('events', queryset=active_events_qs, to_attr='current_active_events')
+        )
+        
+        return qs.order_by('-calculated_heat_score')

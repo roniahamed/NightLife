@@ -322,3 +322,36 @@ class VenueStripeDashboardLinkView(APIView):
             return success_response(data={'url': url})
         except ValueError as e:
             return error_response(message=str(e), status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework import generics
+from drf_spectacular.utils import OpenApiParameter
+
+class HeatmapAPIView(generics.ListAPIView):
+    from .serializers import HeatmapVenueSerializer
+    serializer_class = HeatmapVenueSerializer
+    permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+        summary="Get Heatmap Venues",
+        description="Returns venues within a radius, including their dynamic heat score and zone.",
+        responses={200: HeatmapVenueSerializer(many=True)},
+        parameters=[
+            OpenApiParameter(name='lat', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=True, description='Latitude'),
+            OpenApiParameter(name='lng', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=True, description='Longitude'),
+            OpenApiParameter(name='radius', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=False, description='Search radius in km (default 5.0)'),
+        ],
+        tags=['Heatmap']
+    )
+    def get_queryset(self):
+        lat = self.request.query_params.get('lat')
+        lng = self.request.query_params.get('lng')
+        radius = self.request.query_params.get('radius', 5.0)
+        
+        if not lat or not lng:
+            return Venue.objects.none()
+            
+        from .services import HeatmapService
+        try:
+            return HeatmapService.get_heatmap_data(lat, lng, radius_km=float(radius))
+        except ValueError:
+            return Venue.objects.none()

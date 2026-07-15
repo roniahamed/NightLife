@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AmenityViewSet, VenueCategoryViewSet, VenueViewSet, VenueGalleryViewSet,
     VenueOperatingHourViewSet, VenueReviewViewSet, VenueStripeOnboardingView,
-    VenueStripeOnboardingReturnView, VenueStripeDashboardLinkView
+    VenueStripeOnboardingReturnView, VenueStripeDashboardLinkView, HeatmapAPIView
 )
 
 router = DefaultRouter()
@@ -48,6 +48,8 @@ venue_reviews_detail = VenueReviewViewSet.as_view({
 })
 
 urlpatterns = [
+    path('heatmap/', HeatmapAPIView.as_view(), name='heatmap-venues'),
+    
     # Nested gallery
     path('<uuid:venue_pk>/gallery/', venue_gallery_list, name='venue-gallery-list'),
     path('<uuid:venue_pk>/gallery/<uuid:pk>/', venue_gallery_detail, name='venue-gallery-detail'),
@@ -61,8 +63,6 @@ urlpatterns = [
     path('<uuid:venue_pk>/reviews/', venue_reviews_list, name='venue-reviews-list'),
     path('<uuid:venue_pk>/reviews/<uuid:pk>/', venue_reviews_detail, name='venue-reviews-detail'),
 
-    # Base routes (put at bottom so `<uuid:venue_pk>/...` matches correctly if needed,
-    # though router handles its own regex so we are fine).
     # Base routes
     path('stripe/onboard/', VenueStripeOnboardingView.as_view(), name='venue-stripe-onboard'),
     path('stripe/onboard/return/', VenueStripeOnboardingReturnView.as_view(), name='venue-stripe-onboard-return'),

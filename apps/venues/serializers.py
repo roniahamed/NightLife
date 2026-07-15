@@ -183,3 +183,54 @@ class DashboardAnalyticsSerializer(serializers.Serializer):
     stripe_pending_balance = serializers.FloatField()
     active_events_count = serializers.IntegerField()
     recent_transactions = serializers.ListField(child=serializers.DictField())
+
+class HeatmapActiveEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.events.models import Event
+        model = Event
+        fields = ['id', 'title', 'cover_image', 'start_time', 'end_time']
+
+class HeatmapVenueSerializer(serializers.ModelSerializer):
+    calculated_heat_score = serializers.IntegerField(read_only=True)
+    heat_zone = serializers.CharField(read_only=True)
+    active_events = serializers.SerializerMethodField(read_only=True)
+    location_coordinates = serializers.SerializerMethodField(read_only=True)
+    is_currently_open = serializers.SerializerMethodField(read_only=True)
+    followers_count = serializers.IntegerField(source='total_followers', read_only=True, default=0)
+    
+    class Meta:
+        model = Venue
+        fields = [
+            'id', 'name', 'profile_image', 'location_coordinates', 
+            'calculated_heat_score', 'heat_zone', 'followers_count', 
+            'active_events', 'is_currently_open'
+        ]
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_location_coordinates(self, obj):
+        if obj.location:
+            return {
+                'latitude': obj.location.y,
+                'longitude': obj.location.x
+            }
+        return None
+
+    @extend_schema_field(HeatmapActiveEventSerializer(many=True))
+    def get_active_events(self, obj):
+        if hasattr(obj, 'current_active_events'):
+            return HeatmapActiveEventSerializer(obj.current_active_events, many=True, context=self.context).data
+        return []
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_is_currently_open(self, obj):
+        from django.utils import timezone
+        now = timezone.now()
+        day_of_week = now.weekday()
+        current_time = now.time()
+        
+        for hours in obj.operating_hours.all():
+            if hours.day_of_week == day_of_week and not hours.is_closed:
+                if hours.open_time <= current_time <= hours.close_time:
+                    return True
+        return False
+
