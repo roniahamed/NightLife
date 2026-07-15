@@ -686,6 +686,56 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{id}/attendees/:
+    get:
+      operationId: events_attendees_list
+      description: Returns a list of attendees for an event. Requires active_profile='venue'.
+      summary: Get Event Attendees
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this event.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Events
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttendeeList'
+          description: ''
   /api/events/{id}/rsvp/:
     post:
       operationId: events_rsvp_create
@@ -973,16 +1023,49 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/social/posts/:
+  /api/social/for-you/:
     get:
-      operationId: social_posts_list
+      operationId: social_for_you_list
       parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
       - name: ordering
         required: false
         in: query
         description: Which field to use when ordering the results.
         schema:
           type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostList'
+          description: ''
+  /api/social/posts/:
+    get:
+      operationId: social_posts_list
+      parameters:
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
       - name: page
         required: false
         in: query
@@ -995,14 +1078,13 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
+      - in: query
+        name: venue_profile
         schema:
           type: string
+          format: uuid
       tags:
-      - social
+      - Social Posts
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1016,19 +1098,20 @@ paths:
           description: ''
     post:
       operationId: social_posts_create
+      summary: Create a new social post
       tags:
-      - social
+      - Social Posts
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostRequest'
+              $ref: '#/components/schemas/PostCreateRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PostRequest'
+              $ref: '#/components/schemas/PostCreateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PostRequest'
+              $ref: '#/components/schemas/PostCreateRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1051,7 +1134,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
+      - Social Posts
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1074,7 +1157,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
+      - Social Posts
       requestBody:
         content:
           application/json:
@@ -1107,7 +1190,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
+      - Social Posts
       requestBody:
         content:
           application/json:
@@ -1140,7 +1223,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
+      - Social Posts
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1150,6 +1233,7 @@ paths:
   /api/social/posts/{id}/like/:
     post:
       operationId: social_posts_like_create
+      summary: Like or Unlike a Post
       parameters:
       - in: path
         name: id
@@ -1159,18 +1243,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
+      - Social Actions
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1179,11 +1252,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Post'
+                type: object
+                additionalProperties: {}
           description: ''
   /api/social/posts/{id}/save_post/:
     post:
       operationId: social_posts_save_post_create
+      summary: Save or Unsave a Post
       parameters:
       - in: path
         name: id
@@ -1193,18 +1268,7 @@ paths:
         description: A UUID string identifying this post.
         required: true
       tags:
-      - social
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PostRequest'
+      - Social Actions
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1213,7 +1277,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Post'
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/social/posts/{id}/share/:
+    post:
+      operationId: social_posts_share_create
+      summary: Share a Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this post.
+        required: true
+      tags:
+      - Social Actions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/social/posts/{post_pk}/comments/:
     get:
@@ -1250,7 +1341,7 @@ paths:
         schema:
           type: string
       tags:
-      - social
+      - Social Comments
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1272,7 +1363,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - social
+      - Social Comments
       requestBody:
         content:
           application/json:
@@ -1313,7 +1404,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - social
+      - Social Comments
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1342,7 +1433,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - social
+      - Social Comments
       requestBody:
         content:
           application/json:
@@ -1382,7 +1473,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - social
+      - Social Comments
       requestBody:
         content:
           application/json:
@@ -1421,7 +1512,7 @@ paths:
           format: uuid
         required: true
       tags:
-      - social
+      - Social Comments
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1431,6 +1522,238 @@ paths:
   /api/social/stories/:
     get:
       operationId: social_stories_list
+      summary: List grouped active stories
+      parameters:
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: venue_profile
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - Social Stories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoryFeedGroupList'
+          description: ''
+    post:
+      operationId: social_stories_create
+      summary: Create a new story
+      tags:
+      - Social Stories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StoryCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoryCreateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+          description: ''
+  /api/social/stories/{id}/:
+    get:
+      operationId: social_stories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this story.
+        required: true
+      tags:
+      - Social Stories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+          description: ''
+    delete:
+      operationId: social_stories_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this story.
+        required: true
+      tags:
+      - Social Stories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/storage/upload/:
+    post:
+      operationId: storage_upload_create
+      tags:
+      - storage
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MediaUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MediaUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaUpload'
+          description: ''
+  /api/tickets/{id}/qr/:
+    get:
+      operationId: tickets_qr_retrieve
+      description: Returns the QR code image for a purchased ticket.
+      summary: Get Ticket QR Code
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Tickets
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/tickets/{id}/refund/:
+    post:
+      operationId: tickets_refund_create
+      description: Requests a refund for a ticket purchase.
+      summary: Request Ticket Refund
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Tickets
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/tickets/{id}/scan/:
+    post:
+      operationId: tickets_scan_create
+      description: Scans a ticket. Requires active_profile='venue'.
+      summary: Scan Ticket
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Event Tickets
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketPurchase'
+          description: ''
+  /api/tickets/checkout/:
+    post:
+      operationId: tickets_checkout_create
+      description: Creates a Stripe Payment Intent to purchase a ticket.
+      summary: Purchase Ticket
+      tags:
+      - Event Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketPurchaseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketPurchaseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketPurchaseRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketPurchase'
+          description: ''
+  /api/tickets/history/:
+    get:
+      operationId: tickets_history_list
       parameters:
       - name: ordering
         required: false
@@ -1457,7 +1780,78 @@ paths:
         schema:
           type: string
       tags:
-      - social
+      - Event Tickets
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTicketPurchaseList'
+          description: ''
+  /api/tickets/rsvp/:
+    post:
+      operationId: tickets_rsvp_create
+      description: 'RSVP to an event. Requires active_profile=''user''. Pass is_going:
+        true to RSVP, false to remove.'
+      summary: RSVP to Event
+      tags:
+      - Events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventRSVPRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/tickets/types/:
+    get:
+      operationId: tickets_types_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Event Tickets
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1467,58 +1861,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedStoryList'
-          description: ''
-    post:
-      operationId: social_stories_create
-      tags:
-      - social
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StoryRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/StoryRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/StoryRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Story'
-          description: ''
-  /api/storage/upload/:
-    post:
-      operationId: storage_upload_create
-      tags:
-      - storage
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/MediaUploadRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/MediaUploadRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MediaUpload'
+                $ref: '#/components/schemas/PaginatedEventTicketTierList'
           description: ''
   /api/users/{username}/block/:
     post:
@@ -1944,8 +2287,9 @@ paths:
   /api/users/profile/:
     get:
       operationId: users_profile_retrieve
-      description: Retrieves the current authenticated user profile.
-      summary: Get User Profile
+      description: Retrieves the current authenticated user or venue profile based
+        on active_profile.
+      summary: Get Active Profile
       tags:
       - Profile
       security:
@@ -1960,9 +2304,8 @@ paths:
           description: ''
     put:
       operationId: users_profile_update
-      description: Updates the current user profile, including latitude/longitude
-        location.
-      summary: Update User Profile
+      description: Updates the current profile (User or Venue).
+      summary: Update Active Profile
       tags:
       - Profile
       requestBody:
@@ -1989,7 +2332,7 @@ paths:
           description: ''
     patch:
       operationId: users_profile_partial_update
-      summary: Partial Update User Profile
+      summary: Partial Update Active Profile
       tags:
       - Profile
       requestBody:
@@ -3485,6 +3828,49 @@ components:
           nullable: true
       required:
       - name
+    Attendee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        ticket_tier_name:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        is_scanned:
+          type: boolean
+        scanned_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - ticket_tier_name
+      - user
+      - user_email
+      - user_name
     AvailableProfilesResponse:
       type: object
       properties:
@@ -4068,14 +4454,16 @@ components:
           minLength: 1
       required:
       - email
-    MediaType34bEnum:
+    MediaType31eEnum:
       enum:
       - image
       - video
+      - text
       type: string
       description: |-
         * `image` - Image
         * `video` - Video
+        * `text` - Text
     MediaUpload:
       type: object
       properties:
@@ -4152,6 +4540,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Amenity'
+    PaginatedAttendeeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attendee'
     PaginatedCommentList:
       type: object
       required:
@@ -4270,27 +4681,23 @@ components:
     PaginatedPostList:
       type: object
       required:
-      - count
       - results
       properties:
-        count:
-          type: integer
-          example: 123
         next:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?page=4
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
         previous:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?page=2
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
         results:
           type: array
           items:
             $ref: '#/components/schemas/Post'
-    PaginatedStoryList:
+    PaginatedStoryFeedGroupList:
       type: object
       required:
       - count
@@ -4312,7 +4719,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/Story'
+            $ref: '#/components/schemas/StoryFeedGroup'
     PaginatedTicketPurchaseList:
       type: object
       required:
@@ -4655,6 +5062,10 @@ components:
           nullable: true
         caption:
           type: string
+        mood:
+          type: string
+          nullable: true
+          maxLength: 10
         visibility:
           $ref: '#/components/schemas/VisibilityEnum'
         tags:
@@ -4665,10 +5076,6 @@ components:
             maxLength: 50
           nullable: true
           maxItems: 10
-        location_venue:
-          type: string
-          format: uuid
-          nullable: true
         shares_count:
           type: integer
           maximum: 2147483647
@@ -4886,16 +5293,19 @@ components:
           - $ref: '#/components/schemas/UserPublicProfile'
           readOnly: true
         venue_profile:
-          type: string
-          format: uuid
+          allOf:
+          - $ref: '#/components/schemas/Venue'
           readOnly: true
-          nullable: true
         event:
           type: string
           format: uuid
           nullable: true
         caption:
           type: string
+        mood:
+          type: string
+          nullable: true
+          maxLength: 10
         visibility:
           $ref: '#/components/schemas/VisibilityEnum'
         tags:
@@ -4906,9 +5316,9 @@ components:
           nullable: true
           maxItems: 10
         location_venue:
-          type: string
-          format: uuid
-          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/Venue'
+          readOnly: true
         location_coordinates:
           type: string
           readOnly: true
@@ -4958,11 +5368,49 @@ components:
       - is_saved
       - likes_count
       - location_coordinates
+      - location_venue
       - media
       - mentions
       - recent_comments
       - updated_at
       - venue_profile
+    PostCreateRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+        mood:
+          type: string
+          minLength: 1
+          maxLength: 10
+        visibility:
+          allOf:
+          - $ref: '#/components/schemas/VisibilityEnum'
+          default: public
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        venue:
+          type: string
+          format: uuid
+          description: Venue ID. General users must provide either venue or event.
+        event:
+          type: string
+          format: uuid
+          description: Event ID. General users must provide either venue or event.
+        mentions:
+          type: array
+          items:
+            type: string
+            format: uuid
+        media:
+          type: array
+          items:
+            type: string
+            format: binary
     PostMedia:
       type: object
       properties:
@@ -4972,8 +5420,12 @@ components:
         file:
           type: string
           format: uri
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
         media_type:
-          $ref: '#/components/schemas/MediaType34bEnum'
+          $ref: '#/components/schemas/MediaType31eEnum'
         order:
           type: integer
           maximum: 2147483647
@@ -4987,8 +5439,12 @@ components:
         file:
           type: string
           format: binary
+        thumbnail:
+          type: string
+          format: binary
+          nullable: true
         media_type:
-          $ref: '#/components/schemas/MediaType34bEnum'
+          $ref: '#/components/schemas/MediaType31eEnum'
         order:
           type: integer
           maximum: 2147483647
@@ -5017,6 +5473,10 @@ components:
           nullable: true
         caption:
           type: string
+        mood:
+          type: string
+          nullable: true
+          maxLength: 10
         visibility:
           $ref: '#/components/schemas/VisibilityEnum'
         tags:
@@ -5027,10 +5487,6 @@ components:
             maxLength: 50
           nullable: true
           maxItems: 10
-        location_venue:
-          type: string
-          format: uuid
-          nullable: true
         shares_count:
           type: integer
           maximum: 2147483647
@@ -5093,6 +5549,12 @@ components:
         following_count:
           type: integer
           readOnly: true
+        post_count:
+          type: integer
+          readOnly: true
+        events_count:
+          type: integer
+          readOnly: true
         lat:
           type: number
           format: float
@@ -5110,12 +5572,14 @@ components:
           readOnly: true
       required:
       - email
+      - events_count
       - followers_count
       - following_count
       - id
       - is_user_profile_active
       - lat
       - lng
+      - post_count
       - registration_type
       - username
     ProfileDetail:
@@ -5368,8 +5832,20 @@ components:
         media:
           type: string
           format: uri
+          nullable: true
+        text_content:
+          type: string
+          nullable: true
+        bg_color:
+          type: string
+          nullable: true
+          maxLength: 20
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
         media_type:
-          $ref: '#/components/schemas/MediaType34bEnum'
+          $ref: '#/components/schemas/MediaType31eEnum'
         expires_at:
           type: string
           format: date-time
@@ -5383,18 +5859,37 @@ components:
       - created_at
       - expires_at
       - id
-      - media
       - venue_profile
-    StoryRequest:
+    StoryCreateRequest:
       type: object
       properties:
         media:
           type: string
           format: binary
-        media_type:
-          $ref: '#/components/schemas/MediaType34bEnum'
+        text_content:
+          type: string
+          minLength: 1
+        bg_color:
+          type: string
+          minLength: 1
+          maxLength: 20
+    StoryFeedGroup:
+      type: object
+      properties:
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserPublicProfile'
+          nullable: true
+        venue:
+          allOf:
+          - $ref: '#/components/schemas/Venue'
+          nullable: true
+        stories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Story'
       required:
-      - media
+      - stories
     SwitchProfileRequestRequest:
       type: object
       properties:
@@ -5470,6 +5965,14 @@ components:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
           readOnly: true
+        is_scanned:
+          type: boolean
+          readOnly: true
+        scanned_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -5479,7 +5982,9 @@ components:
       - event
       - event_title
       - id
+      - is_scanned
       - platform_fee
+      - scanned_at
       - status
       - stripe_fee
       - ticket_tier
@@ -5632,6 +6137,12 @@ components:
         following_count:
           type: integer
           readOnly: true
+        post_count:
+          type: integer
+          readOnly: true
+        events_count:
+          type: integer
+          readOnly: true
         is_following:
           type: boolean
           readOnly: true
@@ -5646,12 +6157,14 @@ components:
         registration_type:
           $ref: '#/components/schemas/RegistrationTypeEnum'
       required:
+      - events_count
       - followers_count
       - following_count
       - id
       - is_following
       - lat
       - lng
+      - post_count
       - username
     UserPublicProfileRequest:
       type: object
@@ -5892,6 +6405,12 @@ components:
           type: string
           format: date-time
           readOnly: true
+        registration_type:
+          type: string
+          readOnly: true
+        is_user_profile_active:
+          type: boolean
+          readOnly: true
       required:
       - address
       - amenities
@@ -5903,11 +6422,13 @@ components:
       - id
       - is_following
       - is_stripe_connected
+      - is_user_profile_active
       - location
       - location_coordinates
       - name
       - operating_hours
       - owner
+      - registration_type
       - statistic
       - updated_at
     VenueCategory:
