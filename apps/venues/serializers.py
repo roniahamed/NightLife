@@ -46,6 +46,11 @@ class VenueSerializer(serializers.ModelSerializer):
     statistic = VenueStatisticSerializer(read_only=True)
     is_following = serializers.SerializerMethodField(read_only=True)
     is_stripe_connected = serializers.SerializerMethodField(read_only=True)
+    post_count = serializers.SerializerMethodField(read_only=True)
+    events_count = serializers.SerializerMethodField(read_only=True)
+    followers_count = serializers.SerializerMethodField(read_only=True)
+    average_rating = serializers.SerializerMethodField(read_only=True)
+    heat_score = serializers.SerializerMethodField(read_only=True)
     
     amenity_ids = serializers.PrimaryKeyRelatedField(
         queryset=Amenity.objects.all(),
@@ -80,10 +85,11 @@ class VenueSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'distance', 'profile_image', 'cover_image', 'price_tier', 'capacity',
             'email', 'phone', 'website', 'amenities', 'amenity_ids', 'categories', 'category_ids',
             'is_active', 'is_following', 'is_stripe_connected',
+            'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score',
             'gallery', 'operating_hours', 'statistic', 'created_at', 'updated_at',
             'registration_type', 'is_user_profile_active'
         ]
-        read_only_fields = ['id', 'owner', 'created_at', 'updated_at', 'registration_type', 'is_user_profile_active']
+        read_only_fields = ['id', 'owner', 'created_at', 'updated_at', 'registration_type', 'is_user_profile_active', 'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -120,8 +126,33 @@ class VenueSerializer(serializers.ModelSerializer):
             return obj.followers.filter(user=request.user).exists()
         return False
         
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_stripe_connected(self, obj):
         return bool(obj.stripe_account_id)
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_post_count(self, obj):
+        return obj.venue_posts.count()
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_events_count(self, obj):
+        return obj.events.count()
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    @extend_schema_field(OpenApiTypes.FLOAT)
+    def get_average_rating(self, obj):
+        if hasattr(obj, 'statistic') and obj.statistic:
+            return float(obj.statistic.average_rating)
+        return 0.0
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_heat_score(self, obj):
+        if hasattr(obj, 'statistic') and obj.statistic:
+            return obj.statistic.heat_score
+        return 0
 
 class DashboardChartDataSerializer(serializers.Serializer):
     day = serializers.CharField()

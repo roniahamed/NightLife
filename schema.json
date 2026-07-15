@@ -6381,7 +6381,23 @@ components:
           type: boolean
           readOnly: true
         is_stripe_connected:
-          type: string
+          type: boolean
+          readOnly: true
+        post_count:
+          type: integer
+          readOnly: true
+        events_count:
+          type: integer
+          readOnly: true
+        followers_count:
+          type: integer
+          readOnly: true
+        average_rating:
+          type: number
+          format: float
+          readOnly: true
+        heat_score:
+          type: integer
           readOnly: true
         gallery:
           type: array
@@ -6414,11 +6430,15 @@ components:
       required:
       - address
       - amenities
+      - average_rating
       - categories
       - created_at
       - description
       - distance
+      - events_count
+      - followers_count
       - gallery
+      - heat_score
       - id
       - is_following
       - is_stripe_connected
@@ -6428,6 +6448,7 @@ components:
       - name
       - operating_hours
       - owner
+      - post_count
       - registration_type
       - statistic
       - updated_at
