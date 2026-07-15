@@ -344,62 +344,94 @@ class HeatmapService:
     def annotate_venue_with_heat_score(qs):
         from django.utils import timezone
         from datetime import timedelta
-        from django.db.models import Count, Q, F, FloatField, IntegerField, Case, When, Value, Sum
+        from django.db.models import Count, Q, F, FloatField, IntegerField, Case, When, Value, Sum, CharField
         from django.db.models.functions import Coalesce
         from django.db.models import Subquery, OuterRef
-        from apps.events.models import Event
+        from apps.events.models import Event, TicketPurchase
+        from apps.social.models import Post, Like, Comment
+        from apps.venues.models import VenueReview, VenueFollow
 
         now = timezone.now()
         last_week = now - timedelta(days=7)
 
-        # Subquery to find the highest number of tickets sold for a single active event at the venue
-        event_tickets_sq = Event.objects.filter(
+        # Subquery to calculate tickets safely without Cartesian products
+        tickets_sq = TicketPurchase.objects.filter(
+            event=OuterRef('pk'),
+            status='completed'
+        ).values('event').annotate(
+            total=Sum('quantity')
+        ).values('total')
+
+        # Subquery to find the highest score (Tickets + RSVPs) for a single active event at the venue
+        event_score_sq = Event.objects.filter(
             venue=OuterRef('pk'),
             is_active=True,
             start_time__lte=now + timedelta(days=7),
             end_time__gte=now - timedelta(days=1)
         ).annotate(
-            tickets_sold=Coalesce(Sum(
-                'ticket_purchases__quantity',
-                filter=Q(ticket_purchases__status='completed')
-            ), 0)
-        ).order_by('-tickets_sold').values('tickets_sold')[:1]
+            tickets_sold=Coalesce(Subquery(tickets_sq), 0),
+            rsvps_count=Count('rsvps', distinct=True)
+        ).annotate(
+            event_score=F('tickets_sold') * 5 + F('rsvps_count') * 3
+        ).order_by('-event_score').values('event_score')[:1]
 
-        # Annotations for recent activity
+        # Optimization: Use Subqueries instead of Count() over Joins to avoid massive Cartesian products
+        active_events_sq = Event.objects.filter(
+            venue=OuterRef('pk'), start_time__lte=now, end_time__gte=now, is_active=True
+        ).values('venue').annotate(c=Count('pk')).values('c')
+
+        recent_posts_sq = Post.objects.filter(
+            location_venue=OuterRef('pk'), created_at__gte=now - timedelta(days=14)
+        ).values('location_venue').annotate(c=Count('pk')).values('c')
+
+        recent_reviews_sq = VenueReview.objects.filter(
+            venue=OuterRef('pk'), created_at__gte=last_week
+        ).values('venue').annotate(c=Count('pk')).values('c')
+
+        recent_post_likes_sq = Like.objects.filter(
+            post__location_venue=OuterRef('pk'), created_at__gte=last_week
+        ).values('post__location_venue').annotate(c=Count('pk')).values('c')
+
+        recent_post_comments_sq = Comment.objects.filter(
+            post__location_venue=OuterRef('pk'), created_at__gte=last_week
+        ).values('post__location_venue').annotate(c=Count('pk')).values('c')
+
+        total_followers_sq = VenueFollow.objects.filter(
+            venue=OuterRef('pk')
+        ).values('venue').annotate(c=Count('pk')).values('c')
+
+        # Annotations for recent activity using optimized Subqueries
         qs = qs.annotate(
-            max_active_event_tickets_sold=Coalesce(Subquery(event_tickets_sq), 0),
-            active_events_count=Count(
-                'events',
-                filter=Q(events__start_time__lte=now, events__end_time__gte=now, events__is_active=True),
-                distinct=True
-            ),
-            recent_posts=Count(
-                'tagged_posts',
-                filter=Q(tagged_posts__created_at__gte=now - timedelta(days=14)),
-                distinct=True
-            ),
-            recent_reviews=Count(
-                'reviews',
-                filter=Q(reviews__created_at__gte=last_week),
-                distinct=True
-            ),
-            total_followers=Count('followers', distinct=True)
+            max_active_event_score=Coalesce(Subquery(event_score_sq), 0),
+            active_events_count=Coalesce(Subquery(active_events_sq), 0),
+            recent_posts=Coalesce(Subquery(recent_posts_sq), 0),
+            recent_reviews=Coalesce(Subquery(recent_reviews_sq), 0),
+            recent_post_likes=Coalesce(Subquery(recent_post_likes_sq), 0),
+            recent_post_comments=Coalesce(Subquery(recent_post_comments_sq), 0),
+            total_followers=Coalesce(Subquery(total_followers_sq), 0)
         )
 
-        # Calculate dynamic heat score and Zone
+        from django.db.models.functions import Least
+
+        # Calculate dynamic heat score and Zone with a max cap of 1000
         qs = qs.annotate(
-            calculated_heat_score=F('max_active_event_tickets_sold') * 5 +
-                                  F('active_events_count') * 20 +
-                                  F('recent_posts') * 2 +
-                                  F('recent_reviews') * 3 +
-                                  F('total_followers') / 10
+            calculated_heat_score=Least(
+                F('max_active_event_score') +
+                F('active_events_count') * 20 +
+                F('recent_posts') * 2 +
+                F('recent_reviews') * 3 +
+                F('recent_post_likes') * 1 +
+                F('recent_post_comments') * 2 +
+                F('total_followers') / 10,
+                Value(1000)
+            )
         ).annotate(
             heat_zone=Case(
-                When(calculated_heat_score__gte=100, then=Value('Insane')),
-                When(calculated_heat_score__gte=50, then=Value('Hot')),
-                When(calculated_heat_score__gte=20, then=Value('Active')),
+                When(calculated_heat_score__gte=800, then=Value('Insane')),
+                When(calculated_heat_score__gte=500, then=Value('Hot')),
+                When(calculated_heat_score__gte=200, then=Value('Active')),
                 default=Value('Mild'),
-                output_field=models.CharField()
+                output_field=CharField()
             )
         )
         return qs
@@ -408,7 +440,7 @@ class HeatmapService:
     def get_heatmap_data(latitude, longitude, radius_km=5.0, search_query=None):
         from django.contrib.gis.geos import Point
         from django.contrib.gis.measure import D
-        from django.db.models import Q
+        from django.db.models import Q, Prefetch
 
         try:
             point = Point(float(longitude), float(latitude), srid=4326)
@@ -431,7 +463,7 @@ class HeatmapService:
         now = timezone.now()
         active_events_qs = Event.objects.filter(start_time__lte=now, end_time__gte=now, is_active=True)
         qs = qs.prefetch_related(
-            models.Prefetch('events', queryset=active_events_qs, to_attr='current_active_events'),
+            Prefetch('events', queryset=active_events_qs, to_attr='current_active_events'),
             'operating_hours'
         )
         

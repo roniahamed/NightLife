@@ -217,11 +217,23 @@ class DiscoveryService:
         }
 
     @staticmethod
+    def get_trending_venues(user=None, limit=5):
+        from apps.venues.services import HeatmapService
+        from apps.venues.models import VenueFollow
+        qs = Venue.objects.filter(is_active=True, is_approved=True)
+        qs = HeatmapService.annotate_venue_with_heat_score(qs)
+        
+        # Filter out venues the user is already following if user is provided
+        if user and user.is_authenticated:
+            following_ids = VenueFollow.objects.filter(user=user).values_list('venue_id', flat=True)
+            qs = qs.exclude(id__in=following_ids)
+            
+        # Sort by the dynamically calculated heat score and select top X
+        return qs.order_by('-calculated_heat_score')[:limit]
+
+    @staticmethod
     def get_trending():
-        venues = Venue.objects.filter(is_active=True).annotate(
-            followers_count=F('statistic__followers_count'),
-            trending_score=F('statistic__heat_score')
-        ).order_by('-trending_score', '-followers_count')[:10]
+        venues = DiscoveryService.get_trending_venues(limit=10)
 
         events = Event.objects.filter(is_active=True).annotate(
             rsvp_count=Count('rsvps'),
