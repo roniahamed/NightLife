@@ -348,7 +348,8 @@ class HeatmapService:
         from datetime import timedelta
         from django.db.models import Count, Q, F, FloatField, IntegerField, Case, When, Value, Sum
         from django.db.models.functions import Coalesce
-        from django.db import models
+        from django.db.models import Subquery, OuterRef
+        from apps.events.models import Event
 
         now = timezone.now()
         yesterday = now - timedelta(days=1)
@@ -365,13 +366,23 @@ class HeatmapService:
             is_active=True
         )
 
+        # Subquery to find the highest number of tickets sold for a single active event at the venue
+        event_tickets_sq = Event.objects.filter(
+            venue=OuterRef('pk'),
+            is_active=True,
+            start_time__lte=now + timedelta(days=7), # Considering currently active or upcoming in next 7 days
+            end_time__gte=now - timedelta(days=1)
+        ).annotate(
+            tickets_sold=Coalesce(Sum(
+                'ticket_purchases__quantity',
+                filter=Q(ticket_purchases__status='completed')
+            ), 0)
+        ).order_by('-tickets_sold').values('tickets_sold')[:1]
+
         # Annotations for recent activity
         qs = qs.annotate(
-            # Ticket purchases in the last 24h
-            recent_tickets_sold=Coalesce(Sum(
-                'events__ticket_purchases__quantity',
-                filter=Q(events__ticket_purchases__created_at__gte=yesterday, events__ticket_purchases__status='completed')
-            ), 0),
+            # Max tickets sold for a single active event
+            max_active_event_tickets_sold=Coalesce(Subquery(event_tickets_sq), 0),
             
             # Active events right now
             active_events_count=Count(
@@ -380,10 +391,10 @@ class HeatmapService:
                 distinct=True
             ),
             
-            # Posts from the last 24h
+            # Recent posts for the venue (e.g., last 14 days)
             recent_posts=Count(
                 'tagged_posts',
-                filter=Q(tagged_posts__created_at__gte=yesterday),
+                filter=Q(tagged_posts__created_at__gte=now - timedelta(days=14)),
                 distinct=True
             ),
             
@@ -400,7 +411,7 @@ class HeatmapService:
 
         # Calculate dynamic heat score
         qs = qs.annotate(
-            calculated_heat_score=F('recent_tickets_sold') * 5 +
+            calculated_heat_score=F('max_active_event_tickets_sold') * 5 +
                                   F('active_events_count') * 20 +
                                   F('recent_posts') * 2 +
                                   F('recent_reviews') * 3 +
