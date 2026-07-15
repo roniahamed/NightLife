@@ -341,9 +341,7 @@ def unfollow_venue(user, venue):
 
 class HeatmapService:
     @staticmethod
-    def get_heatmap_data(latitude, longitude, radius_km=5.0, search_query=None):
-        from django.contrib.gis.geos import Point
-        from django.contrib.gis.measure import D
+    def annotate_venue_with_heat_score(qs):
         from django.utils import timezone
         from datetime import timedelta
         from django.db.models import Count, Q, F, FloatField, IntegerField, Case, When, Value, Sum
@@ -352,28 +350,13 @@ class HeatmapService:
         from apps.events.models import Event
 
         now = timezone.now()
-        yesterday = now - timedelta(days=1)
         last_week = now - timedelta(days=7)
-
-        try:
-            point = Point(float(longitude), float(latitude), srid=4326)
-        except (ValueError, TypeError):
-            return Venue.objects.none()
-
-        # Base Queryset
-        qs = Venue.objects.filter(
-            location__distance_lte=(point, D(km=radius_km)),
-            is_active=True
-        )
-
-        if search_query:
-            qs = qs.filter(Q(name__icontains=search_query) | Q(username__icontains=search_query))
 
         # Subquery to find the highest number of tickets sold for a single active event at the venue
         event_tickets_sq = Event.objects.filter(
             venue=OuterRef('pk'),
             is_active=True,
-            start_time__lte=now + timedelta(days=7), # Considering currently active or upcoming in next 7 days
+            start_time__lte=now + timedelta(days=7),
             end_time__gte=now - timedelta(days=1)
         ).annotate(
             tickets_sold=Coalesce(Sum(
@@ -384,45 +367,33 @@ class HeatmapService:
 
         # Annotations for recent activity
         qs = qs.annotate(
-            # Max tickets sold for a single active event
             max_active_event_tickets_sold=Coalesce(Subquery(event_tickets_sq), 0),
-            
-            # Active events right now
             active_events_count=Count(
                 'events',
                 filter=Q(events__start_time__lte=now, events__end_time__gte=now, events__is_active=True),
                 distinct=True
             ),
-            
-            # Recent posts for the venue (e.g., last 14 days)
             recent_posts=Count(
                 'tagged_posts',
                 filter=Q(tagged_posts__created_at__gte=now - timedelta(days=14)),
                 distinct=True
             ),
-            
-            # Reviews from the last 7 days
             recent_reviews=Count(
                 'reviews',
                 filter=Q(reviews__created_at__gte=last_week),
                 distinct=True
             ),
-            
-            # Total Followers
             total_followers=Count('followers', distinct=True)
         )
 
-        # Calculate dynamic heat score
+        # Calculate dynamic heat score and Zone
         qs = qs.annotate(
             calculated_heat_score=F('max_active_event_tickets_sold') * 5 +
                                   F('active_events_count') * 20 +
                                   F('recent_posts') * 2 +
                                   F('recent_reviews') * 3 +
                                   F('total_followers') / 10
-        )
-        
-        # Determine Zone based on calculated_heat_score
-        qs = qs.annotate(
+        ).annotate(
             heat_zone=Case(
                 When(calculated_heat_score__gte=100, then=Value('Insane')),
                 When(calculated_heat_score__gte=50, then=Value('Hot')),
@@ -431,11 +402,37 @@ class HeatmapService:
                 output_field=models.CharField()
             )
         )
+        return qs
+
+    @staticmethod
+    def get_heatmap_data(latitude, longitude, radius_km=5.0, search_query=None):
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.measure import D
+        from django.db.models import Q
+
+        try:
+            point = Point(float(longitude), float(latitude), srid=4326)
+        except (ValueError, TypeError):
+            return Venue.objects.none()
+
+        qs = Venue.objects.filter(
+            location__distance_lte=(point, D(km=radius_km)),
+            is_active=True
+        )
+
+        if search_query:
+            qs = qs.filter(Q(name__icontains=search_query) | Q(username__icontains=search_query))
+
+        qs = HeatmapService.annotate_venue_with_heat_score(qs)
 
         from apps.events.models import Event
+        from django.utils import timezone
+        
+        now = timezone.now()
         active_events_qs = Event.objects.filter(start_time__lte=now, end_time__gte=now, is_active=True)
         qs = qs.prefetch_related(
-            models.Prefetch('events', queryset=active_events_qs, to_attr='current_active_events')
+            models.Prefetch('events', queryset=active_events_qs, to_attr='current_active_events'),
+            'operating_hours'
         )
         
         return qs.order_by('-calculated_heat_score')

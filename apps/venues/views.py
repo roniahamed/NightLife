@@ -89,6 +89,15 @@ class VenueViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
                 
+        # Dynamically calculate and append heat score "everywhere"
+        from .services import HeatmapService
+        queryset = HeatmapService.annotate_venue_with_heat_score(queryset)
+        
+        # Optimize N+1 queries for relations in VenueSerializer
+        queryset = queryset.select_related('owner', 'statistic').prefetch_related(
+            'categories', 'amenities', 'gallery', 'operating_hours', 'followers', 'venue_posts', 'events'
+        )
+                
         return queryset
 
     def perform_create(self, serializer):

@@ -85,11 +85,11 @@ class VenueSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'distance', 'profile_image', 'cover_image', 'price_tier', 'capacity',
             'email', 'phone', 'website', 'amenities', 'amenity_ids', 'categories', 'category_ids',
             'is_active', 'is_following', 'is_stripe_connected',
-            'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score',
+            'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score', 'heat_zone',
             'gallery', 'operating_hours', 'statistic', 'created_at', 'updated_at',
             'registration_type', 'is_user_profile_active'
         ]
-        read_only_fields = ['id', 'owner', 'created_at', 'updated_at', 'registration_type', 'is_user_profile_active', 'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score']
+        read_only_fields = ['id', 'owner', 'created_at', 'updated_at', 'registration_type', 'is_user_profile_active', 'post_count', 'events_count', 'followers_count', 'average_rating', 'heat_score', 'heat_zone']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -150,9 +150,19 @@ class VenueSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_heat_score(self, obj):
+        if hasattr(obj, 'calculated_heat_score'):
+            return obj.calculated_heat_score
         if hasattr(obj, 'statistic') and obj.statistic:
             return obj.statistic.heat_score
         return 0
+
+    heat_zone = serializers.SerializerMethodField()
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_heat_zone(self, obj):
+        if hasattr(obj, 'heat_zone'):
+            return obj.heat_zone
+        return "Mild"
 
 class DashboardChartDataSerializer(serializers.Serializer):
     day = serializers.CharField()
