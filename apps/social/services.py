@@ -180,3 +180,67 @@ class SocialService:
                 
         # Order by priority (highest first), then latest created, then id
         return qs.order_by('-priority', '-created_at', '-id')
+
+    @staticmethod
+    def get_following_feed(user):
+        followed_venue_ids = []
+        if hasattr(user, 'venue_follows'):
+            followed_venue_ids = list(user.venue_follows.values_list('venue_id', flat=True))
+            
+        qs = Post.objects.filter(
+            venue_profile_id__in=followed_venue_ids
+        ).select_related(
+            'author', 'venue_profile'
+        ).prefetch_related(
+            'media', 'mentions'
+        ).annotate(
+            likes_count_annotated=Count('likes', distinct=True),
+            comments_count_annotated=Count('comments', distinct=True)
+        )
+
+        recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
+        qs = qs.prefetch_related(
+            Prefetch('comments', queryset=recent_comments_qs, to_attr='prefetched_recent_comments')
+        )
+        
+        return qs.order_by('-created_at')
+
+    @staticmethod
+    def get_nearby_feed(user, latitude=None, longitude=None):
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.db.models.functions import Distance
+        from django.db.models import Value, FloatField
+        from django.contrib.gis.measure import D
+
+        qs = Post.objects.filter(venue_profile__isnull=False)
+
+        point = None
+        if latitude and longitude:
+            try:
+                point = Point(float(longitude), float(latitude), srid=4326)
+            except (ValueError, TypeError):
+                pass
+        
+        if not point and hasattr(user, 'location') and user.location:
+            point = user.location
+            
+        if point:
+            qs = qs.annotate(distance=Distance('venue_profile__location', point))
+        else:
+            qs = qs.annotate(distance=Value(0.0, output_field=FloatField()))
+
+        qs = qs.select_related(
+            'author', 'venue_profile'
+        ).prefetch_related(
+            'media', 'mentions'
+        ).annotate(
+            likes_count_annotated=Count('likes', distinct=True),
+            comments_count_annotated=Count('comments', distinct=True)
+        )
+
+        recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
+        qs = qs.prefetch_related(
+            Prefetch('comments', queryset=recent_comments_qs, to_attr='prefetched_recent_comments')
+        )
+        
+        return qs.order_by('distance', '-created_at', 'id')

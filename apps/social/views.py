@@ -182,3 +182,43 @@ class ForYouFeedView(generics.ListAPIView):
     def get_queryset(self):
         return SocialService.get_for_you_feed(self.request.user)
 
+class FollowingFeedView(generics.ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    from apps.common.pagination import CursorSetPagination
+    pagination_class = CursorSetPagination
+
+    @extend_schema(
+        summary="Get Following Feed",
+        description="Returns a cursor-paginated feed of posts from venues the user follows.",
+        responses={200: PostSerializer(many=True)},
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
+        ],
+        tags=['Social Posts']
+    )
+    def get_queryset(self):
+        return SocialService.get_following_feed(self.request.user)
+
+class NearbyFeedView(generics.ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    from apps.common.pagination import NearbyCursorPagination
+    pagination_class = NearbyCursorPagination
+
+    @extend_schema(
+        summary="Get Nearby Feed",
+        description="Returns a cursor-paginated feed of venue posts ordered by distance from the user's location.",
+        responses={200: PostSerializer(many=True)},
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
+            OpenApiParameter(name='lat', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, description='Latitude for nearby calculation.'),
+            OpenApiParameter(name='lng', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, description='Longitude for nearby calculation.'),
+        ],
+        tags=['Social Posts']
+    )
+    def get_queryset(self):
+        lat = self.request.query_params.get('lat')
+        lng = self.request.query_params.get('lng')
+        return SocialService.get_nearby_feed(self.request.user, latitude=lat, longitude=lng)
+

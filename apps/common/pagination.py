@@ -17,3 +17,7 @@ class CursorSetPagination(CursorPagination):
 class ForYouCursorPagination(CursorPagination):
     page_size = 10
     ordering = ('-priority', '-created_at', '-id')
+
+class NearbyCursorPagination(CursorPagination):
+    page_size = 10
+    ordering = ('distance', '-created_at', 'id')
