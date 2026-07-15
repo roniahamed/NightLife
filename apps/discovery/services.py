@@ -96,17 +96,9 @@ class DiscoveryService:
 
     @staticmethod
     def get_heatmap_zones(lat=None, lng=None, radius_km=20, time_filter='live', min_lat=None, max_lat=None, min_lng=None, max_lng=None):
-        now = timezone.now()
-        
-        if time_filter == 'live':
-            end_time = now + timedelta(hours=4)
-        elif time_filter == 'tonight':
-            end_time = now.replace(hour=23, minute=59, second=59)
-        else: # this week
-            end_time = now + timedelta(days=7)
-
+        from apps.venues.services import HeatmapService
         venues = Venue.objects.filter(is_active=True, location__isnull=False)
-        
+
         # Bounding box filtering takes precedence over radius if provided
         if min_lat and max_lat and min_lng and max_lng:
             try:
@@ -117,43 +109,21 @@ class DiscoveryService:
                 pass
         elif lat and lng:
             try:
+                from django.contrib.gis.geos import Point
+                from django.contrib.gis.measure import D
                 user_location = Point(float(lng), float(lat), srid=4326)
                 venues = venues.filter(location__distance_lte=(user_location, D(km=radius_km)))
             except (TypeError, ValueError):
                 pass
 
-        # Calculate raw heat based on events and social activity in the time window
-        # We consider posts created in the last 7 days to give ongoing social heat
-        social_window = now - timedelta(days=7)
-        
-        venues = venues.annotate(
-            window_rsvps=Count('events__rsvps', filter=Q(events__start_time__range=(now, end_time)), distinct=True),
-            window_tickets=Sum('events__ticket_purchases__quantity', filter=Q(
-                events__start_time__range=(now, end_time), 
-                events__ticket_purchases__status='completed'
-            )),
-            review_count=Count('reviews', distinct=True),
-            tagged_posts_count=Count('tagged_posts', filter=Q(tagged_posts__created_at__gte=social_window), distinct=True),
-            venue_posts_count=Count('venue_posts', filter=Q(venue_posts__created_at__gte=social_window), distinct=True)
-        ).annotate(
-            raw_heat=ExpressionWrapper(
-                (F('window_rsvps') * 5.0) + 
-                (Coalesce(F('window_tickets'), 0.0) * 10.0) + 
-                (F('review_count') * 2.0) + 
-                (F('tagged_posts_count') * 3.0) +
-                (F('venue_posts_count') * 4.0) + 1.0, # +1 baseline
-                output_field=FloatField()
-            )
-        )
+        # Use the central optimized HeatmapService for consistency
+        venues = HeatmapService.annotate_venue_with_heat_score(venues)
 
-        # To normalize (0-100%), we need the max raw_heat in the current queryset
-        max_heat_agg = venues.aggregate(max_heat=Max('raw_heat'))
-        max_heat = max_heat_agg.get('max_heat') or 1
-        if max_heat == 0: max_heat = 1
-
+        # Normalize the 1000 max score to a 100% scale for the HeatmapZone API
+        from django.db.models import F, FloatField, ExpressionWrapper
         venues = venues.annotate(
             heat_percentage=ExpressionWrapper(
-                (F('raw_heat') / max_heat) * 100,
+                F('calculated_heat_score') / 10.0,
                 output_field=FloatField()
             )
         ).order_by('-heat_percentage')
