@@ -225,21 +225,43 @@ class ChangePasswordView(APIView):
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
-    serializer_class = ProfileSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
+    def get_serializer_class(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ProfileSerializer
+            
+        active_profile = 'user'
+        if hasattr(self.request, 'auth') and self.request.auth and hasattr(self.request.auth, 'payload'):
+            active_profile = self.request.auth.payload.get('active_profile', 'user')
+            
+        if active_profile == 'venue':
+            from apps.venues.serializers import VenueSerializer
+            return VenueSerializer
+        return ProfileSerializer
+
     def get_object(self):
+        active_profile = 'user'
+        if hasattr(self.request, 'auth') and self.request.auth and hasattr(self.request.auth, 'payload'):
+            active_profile = self.request.auth.payload.get('active_profile', 'user')
+            
+        if active_profile == 'venue':
+            if hasattr(self.request.user, 'venue_profile'):
+                return self.request.user.venue_profile
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Venue profile not found.")
+            
         return self.request.user
 
-    @extend_schema(summary="Get User Profile", description="Retrieves the current authenticated user profile.", tags=['Profile'])
+    @extend_schema(summary="Get Active Profile", description="Retrieves the current authenticated user or venue profile based on active_profile.", tags=['Profile'])
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    @extend_schema(summary="Update User Profile", description="Updates the current user profile, including latitude/longitude location.", tags=['Profile'])
+    @extend_schema(summary="Update Active Profile", description="Updates the current profile (User or Venue).", tags=['Profile'])
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
-    @extend_schema(summary="Partial Update User Profile", tags=['Profile'])
+    @extend_schema(summary="Partial Update Active Profile", tags=['Profile'])
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 

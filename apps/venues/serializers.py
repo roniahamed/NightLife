@@ -70,6 +70,9 @@ class VenueSerializer(serializers.ModelSerializer):
     longitude = serializers.FloatField(write_only=True, required=False)
     distance = serializers.SerializerMethodField(read_only=True)
 
+    registration_type = serializers.CharField(source='owner.registration_type', read_only=True)
+    is_user_profile_active = serializers.BooleanField(source='owner.is_user_profile_active', read_only=True)
+
     class Meta:
         model = Venue
         fields = [
@@ -77,9 +80,10 @@ class VenueSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'distance', 'profile_image', 'cover_image', 'price_tier', 'capacity',
             'email', 'phone', 'website', 'amenities', 'amenity_ids', 'categories', 'category_ids',
             'is_active', 'is_following', 'is_stripe_connected',
-            'gallery', 'operating_hours', 'statistic', 'created_at', 'updated_at'
+            'gallery', 'operating_hours', 'statistic', 'created_at', 'updated_at',
+            'registration_type', 'is_user_profile_active'
         ]
-        read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'owner', 'created_at', 'updated_at', 'registration_type', 'is_user_profile_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

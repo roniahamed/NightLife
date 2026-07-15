@@ -29,6 +29,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author = UserPublicProfileSerializer(read_only=True)
+    venue_profile = VenueSerializer(read_only=True)
+    location_venue = VenueSerializer(read_only=True)
     media = PostMediaSerializer(many=True, read_only=True)
     mentions = PostMentionSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()

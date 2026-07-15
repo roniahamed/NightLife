@@ -167,7 +167,8 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.De
 class ForYouFeedView(generics.ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = CursorSetPagination
+    from apps.common.pagination import ForYouCursorPagination
+    pagination_class = ForYouCursorPagination
 
     @extend_schema(
         summary="Get For You Feed",

@@ -91,11 +91,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     lng = serializers.SerializerMethodField()
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
+    post_count = serializers.SerializerMethodField()
+    events_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
-        read_only_fields = ('id', 'email', 'followers_count', 'following_count', 'registration_type', 'is_user_profile_active')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'dob', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'post_count', 'events_count', 'latitude', 'longitude', 'lat', 'lng', 'registration_type', 'is_user_profile_active')
+        read_only_fields = ('id', 'email', 'followers_count', 'following_count', 'post_count', 'events_count', 'registration_type', 'is_user_profile_active')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -132,6 +134,14 @@ class ProfileSerializer(serializers.ModelSerializer):
             return obj.location.x
         return None
 
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_post_count(self, obj):
+        return obj.posts.count()
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_events_count(self, obj):
+        return obj.event_rsvps.count()
+
     def update(self, instance, validated_data):
         lat = validated_data.pop('latitude', None)
         lng = validated_data.pop('longitude', None)
@@ -148,13 +158,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 class UserPublicProfileSerializer(serializers.ModelSerializer):
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
+    post_count = serializers.SerializerMethodField()
+    events_count = serializers.SerializerMethodField()
     is_following = serializers.SerializerMethodField()
     lat = serializers.SerializerMethodField()
     lng = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'is_following', 'lat', 'lng', 'registration_type')
+        fields = ('id', 'username', 'first_name', 'last_name', 'bio', 'profile_image', 'cover_image', 'location_name', 'followers_count', 'following_count', 'post_count', 'events_count', 'is_following', 'lat', 'lng', 'registration_type')
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_followers_count(self, obj):
@@ -182,6 +194,14 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
         if obj.location:
             return obj.location.x
         return None
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_post_count(self, obj):
+        return obj.posts.count()
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_events_count(self, obj):
+        return obj.event_rsvps.count()
 
 class UserFollowerSerializer(serializers.ModelSerializer):
     follower_id = serializers.UUIDField(source='follower.id')

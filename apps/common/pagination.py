@@ -13,3 +13,7 @@ class LargeResultsSetPagination(PageNumberPagination):
 class CursorSetPagination(CursorPagination):
     page_size = 10
     ordering = '-created_at'
+
+class ForYouCursorPagination(CursorPagination):
+    page_size = 10
+    ordering = ('-priority', '-created_at', '-id')

@@ -144,7 +144,11 @@ class SocialService:
 
     @staticmethod
     def get_for_you_feed(user):
-        qs = Post.objects.filter(venue_profile__isnull=False).select_related(
+        from django.db.models import Q
+        
+        qs = Post.objects.filter(
+            venue_profile__isnull=False
+        ).select_related(
             'author', 'venue_profile'
         ).prefetch_related(
             'media', 'mentions'
@@ -159,10 +163,20 @@ class SocialService:
             Prefetch('comments', queryset=recent_comments_qs, to_attr='prefetched_recent_comments')
         )
 
-        # Apply preference: if user follows venues, prioritize/filter them
+        # Apply preference: if user follows venues, prioritize them
+        followed_venue_ids = []
         if hasattr(user, 'venue_follows'):
-            followed_venue_ids = user.venue_follows.values_list('venue_id', flat=True)
-            if followed_venue_ids.exists():
-                qs = qs.filter(venue_profile_id__in=followed_venue_ids)
+            followed_venue_ids = list(user.venue_follows.values_list('venue_id', flat=True))
+            
+        from django.db.models import Case, When, Value, IntegerField
+        
+        qs = qs.annotate(
+            priority=Case(
+                When(venue_profile_id__in=followed_venue_ids, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
                 
-        return qs.order_by('-created_at')
+        # Order by priority (highest first), then latest created, then id
+        return qs.order_by('-priority', '-created_at', '-id')
