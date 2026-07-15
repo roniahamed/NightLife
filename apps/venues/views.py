@@ -339,6 +339,7 @@ class HeatmapAPIView(generics.ListAPIView):
             OpenApiParameter(name='lat', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=True, description='Latitude'),
             OpenApiParameter(name='lng', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=True, description='Longitude'),
             OpenApiParameter(name='radius', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, required=False, description='Search radius in km (default 5.0)'),
+            OpenApiParameter(name='search', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, description='Search by venue name'),
         ],
         tags=['Heatmap']
     )
@@ -346,12 +347,13 @@ class HeatmapAPIView(generics.ListAPIView):
         lat = self.request.query_params.get('lat')
         lng = self.request.query_params.get('lng')
         radius = self.request.query_params.get('radius', 5.0)
+        search = self.request.query_params.get('search', None)
         
         if not lat or not lng:
             return Venue.objects.none()
             
         from .services import HeatmapService
         try:
-            return HeatmapService.get_heatmap_data(lat, lng, radius_km=float(radius))
+            return HeatmapService.get_heatmap_data(lat, lng, radius_km=float(radius), search_query=search)
         except ValueError:
             return Venue.objects.none()

@@ -341,7 +341,7 @@ def unfollow_venue(user, venue):
 
 class HeatmapService:
     @staticmethod
-    def get_heatmap_data(latitude, longitude, radius_km=5.0):
+    def get_heatmap_data(latitude, longitude, radius_km=5.0, search_query=None):
         from django.contrib.gis.geos import Point
         from django.contrib.gis.measure import D
         from django.utils import timezone
@@ -365,6 +365,9 @@ class HeatmapService:
             location__distance_lte=(point, D(km=radius_km)),
             is_active=True
         )
+
+        if search_query:
+            qs = qs.filter(Q(name__icontains=search_query) | Q(username__icontains=search_query))
 
         # Subquery to find the highest number of tickets sold for a single active event at the venue
         event_tickets_sq = Event.objects.filter(
