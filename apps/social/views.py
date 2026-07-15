@@ -4,7 +4,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Post, Comment, Story
-from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer, StoryFeedGroupSerializer
+from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer, StoryFeedGroupSerializer, FeedPostSerializer
 from .services import SocialService
 from apps.common.pagination import StandardResultsSetPagination, CursorSetPagination
 from apps.common.permissions import IsOwnerOrReadOnly
@@ -165,7 +165,6 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.De
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class ForYouFeedView(generics.ListAPIView):
-    from .serializers import FeedPostSerializer
     serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import ForYouCursorPagination
@@ -184,7 +183,6 @@ class ForYouFeedView(generics.ListAPIView):
         return SocialService.get_for_you_feed(self.request.user)
 
 class FollowingFeedView(generics.ListAPIView):
-    from .serializers import FeedPostSerializer
     serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import CursorSetPagination
@@ -203,7 +201,6 @@ class FollowingFeedView(generics.ListAPIView):
         return SocialService.get_following_feed(self.request.user)
 
 class NearbyFeedView(generics.ListAPIView):
-    from .serializers import FeedPostSerializer
     serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import NearbyCursorPagination
