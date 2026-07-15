@@ -165,7 +165,8 @@ class StoryViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.De
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class ForYouFeedView(generics.ListAPIView):
-    serializer_class = PostSerializer
+    from .serializers import FeedPostSerializer
+    serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import ForYouCursorPagination
     pagination_class = ForYouCursorPagination
@@ -173,7 +174,7 @@ class ForYouFeedView(generics.ListAPIView):
     @extend_schema(
         summary="Get For You Feed",
         description="Returns an optimized, cursor-paginated feed of venue posts based on user preferences.",
-        responses={200: PostSerializer(many=True)},
+        responses={200: FeedPostSerializer(many=True)},
         parameters=[
             OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
         ],
@@ -183,7 +184,8 @@ class ForYouFeedView(generics.ListAPIView):
         return SocialService.get_for_you_feed(self.request.user)
 
 class FollowingFeedView(generics.ListAPIView):
-    serializer_class = PostSerializer
+    from .serializers import FeedPostSerializer
+    serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import CursorSetPagination
     pagination_class = CursorSetPagination
@@ -191,7 +193,7 @@ class FollowingFeedView(generics.ListAPIView):
     @extend_schema(
         summary="Get Following Feed",
         description="Returns a cursor-paginated feed of posts from venues the user follows.",
-        responses={200: PostSerializer(many=True)},
+        responses={200: FeedPostSerializer(many=True)},
         parameters=[
             OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
         ],
@@ -201,7 +203,8 @@ class FollowingFeedView(generics.ListAPIView):
         return SocialService.get_following_feed(self.request.user)
 
 class NearbyFeedView(generics.ListAPIView):
-    serializer_class = PostSerializer
+    from .serializers import FeedPostSerializer
+    serializer_class = FeedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
     from apps.common.pagination import NearbyCursorPagination
     pagination_class = NearbyCursorPagination
@@ -209,7 +212,7 @@ class NearbyFeedView(generics.ListAPIView):
     @extend_schema(
         summary="Get Nearby Feed",
         description="Returns a cursor-paginated feed of venue posts ordered by distance from the user's location.",
-        responses={200: PostSerializer(many=True)},
+        responses={200: FeedPostSerializer(many=True)},
         parameters=[
             OpenApiParameter(name='cursor', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, description='The pagination cursor value.'),
             OpenApiParameter(name='lat', type=OpenApiTypes.FLOAT, location=OpenApiParameter.QUERY, description='Latitude for nearby calculation.'),

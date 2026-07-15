@@ -143,9 +143,21 @@ class SocialService:
         return formatted_data
 
     @staticmethod
-    def get_for_you_feed(user):
-        from django.db.models import Q
+    def _annotate_user_status(qs, user):
+        from django.db.models import Exists, OuterRef
+        from apps.social.models import Like, SavedPost
+        from apps.venues.models import VenueFollow
         
+        if hasattr(user, 'is_authenticated') and user.is_authenticated:
+            qs = qs.annotate(
+                is_liked_annotated=Exists(Like.objects.filter(post=OuterRef('pk'), user=user)),
+                is_saved_annotated=Exists(SavedPost.objects.filter(post=OuterRef('pk'), user=user)),
+                is_following_venue_annotated=Exists(VenueFollow.objects.filter(venue=OuterRef('venue_profile_id'), user=user))
+            )
+        return qs
+
+    @staticmethod
+    def get_for_you_feed(user):
         qs = Post.objects.filter(
             venue_profile__isnull=False
         ).select_related(
@@ -156,6 +168,8 @@ class SocialService:
             likes_count_annotated=Count('likes', distinct=True),
             comments_count_annotated=Count('comments', distinct=True)
         )
+        
+        qs = SocialService._annotate_user_status(qs, user)
 
         # Prefetch recent comments to avoid N+1 queries in the serializer
         recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
@@ -197,6 +211,8 @@ class SocialService:
             likes_count_annotated=Count('likes', distinct=True),
             comments_count_annotated=Count('comments', distinct=True)
         )
+        
+        qs = SocialService._annotate_user_status(qs, user)
 
         recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
         qs = qs.prefetch_related(
@@ -210,7 +226,6 @@ class SocialService:
         from django.contrib.gis.geos import Point
         from django.contrib.gis.db.models.functions import Distance
         from django.db.models import Value, FloatField
-        from django.contrib.gis.measure import D
 
         qs = Post.objects.filter(venue_profile__isnull=False)
 
@@ -237,6 +252,8 @@ class SocialService:
             likes_count_annotated=Count('likes', distinct=True),
             comments_count_annotated=Count('comments', distinct=True)
         )
+        
+        qs = SocialService._annotate_user_status(qs, user)
 
         recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
         qs = qs.prefetch_related(

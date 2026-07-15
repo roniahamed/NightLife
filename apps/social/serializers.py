@@ -3,6 +3,7 @@ from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Stor
 from apps.users.serializers import UserPublicProfileSerializer
 from apps.venues.serializers import VenueSerializer
 from apps.events.serializers import EventSerializer
+from apps.venues.models import VenueFollow
 
 class PostMediaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,3 +117,75 @@ class StoryCreateSerializer(serializers.Serializer):
         if not data.get('media') and not data.get('text_content'):
             raise serializers.ValidationError("Either media or text_content must be provided.")
         return data
+
+class FeedPostSerializer(serializers.ModelSerializer):
+    media = PostMediaSerializer(many=True, read_only=True)
+    mentions = PostMentionSerializer(many=True, read_only=True)
+    likes_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    is_saved = serializers.SerializerMethodField()
+    recent_comments = serializers.SerializerMethodField()
+    
+    venue_username = serializers.SerializerMethodField()
+    venue_name = serializers.SerializerMethodField()
+    is_following_venue = serializers.SerializerMethodField()
+    distance = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Post
+        fields = [
+            'id', 'caption', 'tags', 'media', 'mentions',
+            'venue_username', 'venue_name', 'is_following_venue', 'location_coordinates', 'distance',
+            'likes_count', 'comments_count', 'shares_count', 'is_liked', 'is_saved', 'recent_comments', 
+            'created_at', 'updated_at'
+        ]
+
+    def get_recent_comments(self, obj):
+        if hasattr(obj, 'prefetched_recent_comments'):
+            comments = obj.prefetched_recent_comments[:5]
+        else:
+            comments = obj.comments.filter(parent__isnull=True).order_by('-created_at')[:5]
+        return CommentSerializer(comments, many=True, context=self.context).data
+
+    def get_likes_count(self, obj) -> int:
+        return obj.likes_count_annotated if hasattr(obj, 'likes_count_annotated') else obj.likes.count()
+
+    def get_comments_count(self, obj) -> int:
+        return obj.comments_count_annotated if hasattr(obj, 'comments_count_annotated') else obj.comments.count()
+
+    def get_is_liked(self, obj) -> bool:
+        if hasattr(obj, 'is_liked_annotated'):
+            return obj.is_liked_annotated
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Like.objects.filter(post=obj, user=request.user).exists()
+        return False
+
+    def get_is_saved(self, obj) -> bool:
+        if hasattr(obj, 'is_saved_annotated'):
+            return obj.is_saved_annotated
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return SavedPost.objects.filter(post=obj, user=request.user).exists()
+        return False
+
+    def get_venue_username(self, obj):
+        return obj.venue_profile.username if obj.venue_profile and obj.venue_profile.username else None
+
+    def get_venue_name(self, obj):
+        return obj.venue_profile.name if obj.venue_profile else None
+
+    def get_is_following_venue(self, obj) -> bool:
+        if hasattr(obj, 'is_following_venue_annotated'):
+            return obj.is_following_venue_annotated
+        req = self.context.get('request')
+        if not req or not req.user.is_authenticated or not obj.venue_profile:
+            return False
+        return VenueFollow.objects.filter(user=req.user, venue=obj.venue_profile).exists()
+        
+    def get_distance(self, obj):
+        if hasattr(obj, 'distance'):
+            # Convert Distance object to km if applicable
+            return getattr(obj.distance, 'km', obj.distance) if hasattr(obj.distance, 'km') else obj.distance
+        return None
