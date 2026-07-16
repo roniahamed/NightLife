@@ -44,7 +44,7 @@ class DiscoveryAPITests(TestCase):
         )
         
         # Add some RSVPs to give it a score
-        EventRSVP.objects.create(event=self.event, user=self.user, status='going')
+        EventRSVP.objects.create(event=self.event, user=self.user)
 
     def test_global_search(self):
         url = reverse('discovery:search')

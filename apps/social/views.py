@@ -1,10 +1,15 @@
 from rest_framework import viewsets, permissions, status, mixins, generics
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiExample
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Post, Comment, Story
-from .serializers import PostSerializer, CommentSerializer, StorySerializer, PostCreateSerializer, StoryCreateSerializer, StoryFeedGroupSerializer, FeedPostSerializer
+from .serializers import (
+    PostSerializer, PostCreateSerializer, CommentSerializer,
+    StorySerializer, StoryCreateSerializer, StoryFeedGroupSerializer, FeedPostSerializer,
+    PostReportSerializer, CommentReportSerializer
+)
 from .services import SocialService
 from apps.common.pagination import StandardResultsSetPagination, CursorSetPagination
 from apps.common.permissions import IsOwnerOrReadOnly
@@ -232,4 +237,58 @@ class NearbyFeedView(generics.ListAPIView):
         lat = self.request.query_params.get('lat')
         lng = self.request.query_params.get('lng')
         return SocialService.get_nearby_feed(self.request.user, latitude=lat, longitude=lng)
+
+class ReportPostView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Report a Post",
+        description="Submit a report for a specific post.",
+        request=PostReportSerializer,
+        responses={201: PostReportSerializer},
+        tags=['Social Posts']
+    )
+    def post(self, request, pk):
+        from rest_framework import status
+        from apps.common.responses import success_response, error_response
+        from .models import Post
+
+        try:
+            post = Post.objects.get(pk=pk)
+            serializer = PostReportSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(reporter=request.user, post=post)
+                return success_response(message="Post reported successfully.", data=serializer.data, status=status.HTTP_201_CREATED)
+            return error_response(message="Invalid data.", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return error_response(message="Post not found.", status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ReportCommentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Report a Comment",
+        description="Submit a report for a specific comment.",
+        request=CommentReportSerializer,
+        responses={201: CommentReportSerializer},
+        tags=['Social Comments']
+    )
+    def post(self, request, pk):
+        from rest_framework import status
+        from apps.common.responses import success_response, error_response
+        from .models import Comment
+
+        try:
+            comment = Comment.objects.get(pk=pk)
+            serializer = CommentReportSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(reporter=request.user, comment=comment)
+                return success_response(message="Comment reported successfully.", data=serializer.data, status=status.HTTP_201_CREATED)
+            return error_response(message="Invalid data.", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Comment.DoesNotExist:
+            return error_response(message="Comment not found.", status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

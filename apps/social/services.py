@@ -182,6 +182,16 @@ class SocialService:
         return qs
 
     @staticmethod
+    def _exclude_blocked_users(qs, user):
+        from apps.users.models import UserBlock
+        if user and user.is_authenticated:
+            blocked_by_user = UserBlock.objects.filter(blocker=user).values_list('blocked_id', flat=True)
+            blocked_user = UserBlock.objects.filter(blocked=user).values_list('blocker_id', flat=True)
+            # Combine both lists (exclude posts by people you blocked, and people who blocked you)
+            qs = qs.exclude(author_id__in=list(blocked_by_user) + list(blocked_user))
+        return qs
+
+    @staticmethod
     def get_for_you_feed(user):
         qs = Post.objects.filter(
             venue_profile__isnull=False
@@ -195,6 +205,7 @@ class SocialService:
         )
         
         qs = SocialService._annotate_user_status(qs, user)
+        qs = SocialService._exclude_blocked_users(qs, user)
 
         # Prefetch recent comments to avoid N+1 queries in the serializer
         recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
@@ -238,6 +249,7 @@ class SocialService:
         )
         
         qs = SocialService._annotate_user_status(qs, user)
+        qs = SocialService._exclude_blocked_users(qs, user)
 
         recent_comments_qs = Comment.objects.filter(parent__isnull=True).order_by('-created_at')
         qs = qs.prefetch_related(
@@ -253,6 +265,7 @@ class SocialService:
         from django.db.models import Value, FloatField
 
         qs = Post.objects.filter(venue_profile__isnull=False)
+        qs = SocialService._exclude_blocked_users(qs, user)
 
         point = None
         if latitude and longitude:

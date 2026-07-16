@@ -22,13 +22,28 @@ class GlobalSearchView(APIView):
         parameters=[
             OpenApiParameter('q', OpenApiTypes.STR, description='Search query', required=False),
             OpenApiParameter('type', OpenApiTypes.STR, description='Type of entity to search', required=False, enum=['all', 'people', 'clubs', 'events']),
+            OpenApiParameter('lat', OpenApiTypes.FLOAT, description='Latitude for spatial search', required=False),
+            OpenApiParameter('lng', OpenApiTypes.FLOAT, description='Longitude for spatial search', required=False),
+            OpenApiParameter('radius', OpenApiTypes.FLOAT, description='Radius in km for spatial search', required=False),
+            OpenApiParameter('tags', OpenApiTypes.STR, description='Comma separated tags for events', required=False),
         ]
     )
     def get(self, request):
         query = request.query_params.get('q', '')
         entity_type = request.query_params.get('type', 'all').lower()
+        lat = request.query_params.get('lat')
+        lng = request.query_params.get('lng')
+        radius = request.query_params.get('radius', 50)
+        tags = request.query_params.get('tags')
 
-        users, venues, events = DiscoveryService.search_all(query, entity_type)
+        try:
+            radius_km = float(radius)
+        except (ValueError, TypeError):
+            radius_km = 50
+
+        users, venues, events = DiscoveryService.search_all(
+            query, entity_type, lat=lat, lng=lng, radius_km=radius_km, tags=tags
+        )
 
         response_data = {}
         if entity_type in ['all', 'people']:

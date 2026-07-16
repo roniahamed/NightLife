@@ -34,33 +34,59 @@ class DiscoveryService:
         ).prefetch_related('categories', 'amenities')
 
     @staticmethod
-    def search_all(query, entity_type='all'):
+    def search_all(query, entity_type='all', lat=None, lng=None, radius_km=50, tags=None):
         query = query.strip()
-        if not query:
+        users, venues, events = [], [], []
+        
+        # Don't require a query if doing a spatial search or tag search
+        if not query and not (lat and lng) and not tags:
             return [], [], []
 
-        users, venues, events = [], [], []
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.measure import D
+        
+        point = None
+        if lat and lng:
+            try:
+                point = Point(float(lng), float(lat), srid=4326)
+            except (ValueError, TypeError):
+                pass
 
         if entity_type in ['all', 'people']:
-            users = User.objects.filter(
-                Q(username__icontains=query) | 
-                Q(first_name__icontains=query) | 
-                Q(last_name__icontains=query)
-            ).filter(is_active=True)[:10]
+            qs = User.objects.filter(is_active=True)
+            if query:
+                qs = qs.filter(
+                    Q(username__icontains=query) | 
+                    Q(first_name__icontains=query) | 
+                    Q(last_name__icontains=query)
+                )
+            users = qs[:10]
 
         if entity_type in ['all', 'clubs']:
-            base_venues = Venue.objects.filter(
-                Q(name__icontains=query) | 
-                Q(address__icontains=query) |
-                Q(description__icontains=query)
-            ).filter(is_active=True)
+            base_venues = Venue.objects.filter(is_active=True)
+            if query:
+                base_venues = base_venues.filter(
+                    Q(name__icontains=query) | 
+                    Q(address__icontains=query) |
+                    Q(description__icontains=query)
+                )
+            if point:
+                base_venues = base_venues.filter(location__distance_lte=(point, D(km=radius_km)))
             venues = DiscoveryService.annotate_venue_card_details(base_venues)[:10]
 
         if entity_type in ['all', 'events']:
-            events = Event.objects.filter(
-                Q(title__icontains=query) | 
-                Q(description__icontains=query)
-            ).filter(is_active=True)[:10]
+            base_events = Event.objects.filter(is_active=True)
+            if query:
+                base_events = base_events.filter(
+                    Q(title__icontains=query) | 
+                    Q(description__icontains=query)
+                )
+            if point:
+                base_events = base_events.filter(venue__location__distance_lte=(point, D(km=radius_km)))
+            if tags:
+                tag_list = [tag.strip() for tag in tags.split(',')]
+                base_events = base_events.filter(tags__overlap=tag_list)
+            events = base_events[:10]
 
         return users, venues, events
 

@@ -109,3 +109,29 @@ class Story(models.Model):
         
     def __str__(self):
         return f"Story {self.id} by {self.author.username}"
+
+class PostReport(models.Model):
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='post_reports_made')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reports')
+    reason = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"PostReport by {self.reporter.username} on Post {self.post_id}"
+
+class CommentReport(models.Model):
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comment_reports_made')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reports')
+    reason = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"CommentReport by {self.reporter.username} on Comment {self.comment_id}"

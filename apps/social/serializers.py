@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Story
+from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Story, PostReport, CommentReport
 from apps.users.serializers import UserPublicProfileSerializer
 from apps.venues.serializers import VenueSerializer
 from apps.events.serializers import EventSerializer
@@ -235,3 +235,13 @@ class FeedPostSerializer(serializers.ModelSerializer):
         if obj.venue_profile:
             return obj.venue_profile.address
         return None
+
+class PostReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostReport
+        fields = ['id', 'reason', 'description', 'created_at']
+
+class CommentReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentReport
+        fields = ['id', 'reason', 'description', 'created_at']

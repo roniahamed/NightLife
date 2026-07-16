@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     EventViewSet, EventCategoryViewSet, EventRSVPView,
     EventTicketTierViewSet, TicketPurchaseViewSet, StripeWebhookView,
-    EventLineupViewSet
+    EventLineupViewSet, TicketQRCodeView, TicketRefundView, TicketScanView
 )
 
 router = DefaultRouter()
@@ -47,6 +47,9 @@ urlpatterns = [
     path('webhook/stripe/', StripeWebhookView.as_view(), name='stripe-webhook'),
     path('purchases/', ticket_purchases_list, name='ticket-purchases-list'),
     path('purchases/<str:pk>/', ticket_purchases_detail, name='ticket-purchases-detail'),
+    path('purchases/<str:pk>/qr/', TicketQRCodeView.as_view(), name='ticket-qr-code'),
+    path('purchases/<str:pk>/refund/', TicketRefundView.as_view(), name='ticket-refund'),
+    path('purchases/<str:pk>/scan/', TicketScanView.as_view(), name='ticket-scan'),
     path('<str:event_pk>/tickets/', event_tickets_list, name='event-tickets-list'),
     path('<str:event_pk>/tickets/<str:pk>/', event_tickets_detail, name='event-tickets-detail'),
     path('<str:event_pk>/lineups/', event_lineup_list, name='event-lineups-list'),
