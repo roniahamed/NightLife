@@ -51,7 +51,7 @@ class SearchEventSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'start_time', 'cover_image', 'venue_name']
 
 class TrendingVenueSerializer(serializers.ModelSerializer):
-    heat_score = serializers.FloatField(source='trending_score', read_only=True)
+    heat_score = serializers.FloatField(source='calculated_heat_score', read_only=True)
     followers_count = serializers.IntegerField(read_only=True)
 
     class Meta:

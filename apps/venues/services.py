@@ -157,7 +157,9 @@ def get_dashboard_stats(venue):
         tickets_change = 100.0 if tickets_this_week > 0 else 0.0
         
     # 4. Heat Score
-    heat_score = venue.statistic.heat_score if hasattr(venue, 'statistic') else 0
+    # Use dynamic heatmap score instead of static DB field
+    annotated_venue = HeatmapService.annotate_venue_with_heat_score(Venue.objects.filter(id=venue.id)).first()
+    heat_score = getattr(annotated_venue, 'calculated_heat_score', 0)
     
     # 5. Revenue Chart Data (Last 7 days)
     chart_data = []
