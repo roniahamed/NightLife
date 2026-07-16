@@ -128,7 +128,7 @@ class EventRSVPView(APIView):
         if is_going:
             rsvp, created = EventRSVP.objects.get_or_create(user=request.user, event=event)
             
-            if created and getattr(request.user, 'notify_events_rsvps', False):
+            if created and (getattr(request.user, 'settings', None) and request.user.settings.notify_events_rsvps):
                 send_user_notification(
                     user=request.user,
                     title="RSVP Confirmed",

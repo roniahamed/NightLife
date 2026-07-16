@@ -75,7 +75,7 @@ class SocialService:
             return False # Unliked
         
         # Send notification to post author if they prefer it and it's not their own like
-        if post.author and post.author != user and getattr(post.author, 'notify_likes', False):
+        if post.author and post.author != user and (getattr(post.author, 'settings', None) and post.author.settings.notify_likes):
             send_user_notification(
                 user=post.author,
                 title="New Like",
@@ -92,7 +92,7 @@ class SocialService:
         comment = Comment.objects.create(post=post, user=user, text=text, parent_id=parent_id)
         
         # Send notification to post author if they prefer it and it's not their own comment
-        if post.author and post.author != user and getattr(post.author, 'notify_comments', False):
+        if post.author and post.author != user and (getattr(post.author, 'settings', None) and post.author.settings.notify_comments):
             send_user_notification(
                 user=post.author,
                 title="New Comment",

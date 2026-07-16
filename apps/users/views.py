@@ -310,7 +310,7 @@ class FollowUserView(APIView):
             follow.delete()
             return success_response(message="Unfollowed successfully.")
         
-        if getattr(target_user, 'notify_new_followers', False):
+        if (getattr(target_user, 'settings', None) and target_user.settings.notify_new_followers):
             send_user_notification(
                 user=target_user,
                 title="New Follower",

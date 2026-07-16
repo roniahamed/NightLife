@@ -115,7 +115,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         comment = serializer.save(user=self.request.user, post_id=post_id)
         
         post = comment.post
-        if post.author and post.author != self.request.user and getattr(post.author, 'notify_comments', False):
+        if post.author and post.author != self.request.user and (getattr(post.author, 'settings', None) and post.author.settings.notify_comments):
             send_user_notification(
                 user=post.author,
                 title="New Comment",
