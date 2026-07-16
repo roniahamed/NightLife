@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from .services import DiscoveryService
@@ -15,7 +15,15 @@ from .serializers import (
 class GlobalSearchView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(summary="Global Search", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Global Search", 
+        request=None, 
+        responses={200: OpenApiTypes.OBJECT},
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, description='Search query', required=False),
+            OpenApiParameter('type', OpenApiTypes.STR, description='Type of entity to search', required=False, enum=['all', 'people', 'clubs', 'events']),
+        ]
+    )
     def get(self, request):
         query = request.query_params.get('q', '')
         entity_type = request.query_params.get('type', 'all').lower()
@@ -35,7 +43,15 @@ class GlobalSearchView(APIView):
 class TrendingSummaryView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(summary="Get Trending Summary", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Get Trending Summary", 
+        request=None, 
+        responses={200: OpenApiTypes.OBJECT},
+        parameters=[
+            OpenApiParameter('lat', OpenApiTypes.FLOAT, description='Latitude for location-biased summary', required=False),
+            OpenApiParameter('lng', OpenApiTypes.FLOAT, description='Longitude for location-biased summary', required=False),
+        ]
+    )
     def get(self, request):
         lat = request.query_params.get('lat')
         lng = request.query_params.get('lng')
@@ -56,7 +72,17 @@ class TrendingView(APIView):
 class HeatmapStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(summary="Get Heatmap Statistics", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Get Heatmap Statistics", 
+        request=None, 
+        responses={200: OpenApiTypes.OBJECT},
+        parameters=[
+            OpenApiParameter('lat', OpenApiTypes.FLOAT, description='Latitude', required=False),
+            OpenApiParameter('lng', OpenApiTypes.FLOAT, description='Longitude', required=False),
+            OpenApiParameter('radius', OpenApiTypes.FLOAT, description='Radius in km (default 20)', required=False),
+            OpenApiParameter('time_filter', OpenApiTypes.STR, description='Time filter (default live)', required=False, enum=['live', 'tonight', 'week']),
+        ]
+    )
     def get(self, request):
         lat = request.query_params.get('lat')
         lng = request.query_params.get('lng')
@@ -69,7 +95,21 @@ class HeatmapStatsView(APIView):
 class HeatmapZoneView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(summary="Get Heatmap Zones", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Get Heatmap Zones", 
+        request=None, 
+        responses={200: OpenApiTypes.OBJECT},
+        parameters=[
+            OpenApiParameter('lat', OpenApiTypes.FLOAT, description='Latitude', required=False),
+            OpenApiParameter('lng', OpenApiTypes.FLOAT, description='Longitude', required=False),
+            OpenApiParameter('radius', OpenApiTypes.FLOAT, description='Radius in km (default 20)', required=False),
+            OpenApiParameter('min_lat', OpenApiTypes.FLOAT, description='Minimum latitude for bounding box', required=False),
+            OpenApiParameter('max_lat', OpenApiTypes.FLOAT, description='Maximum latitude for bounding box', required=False),
+            OpenApiParameter('min_lng', OpenApiTypes.FLOAT, description='Minimum longitude for bounding box', required=False),
+            OpenApiParameter('max_lng', OpenApiTypes.FLOAT, description='Maximum longitude for bounding box', required=False),
+            OpenApiParameter('time_filter', OpenApiTypes.STR, description='Time filter (default live)', required=False, enum=['live', 'tonight', 'week']),
+        ]
+    )
     def get(self, request):
         lat = request.query_params.get('lat')
         lng = request.query_params.get('lng')
@@ -94,7 +134,16 @@ class HeatmapZoneView(APIView):
 class NearbyView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(summary="Get Nearby Venues", request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Get Nearby Venues", 
+        request=None, 
+        responses={200: OpenApiTypes.OBJECT},
+        parameters=[
+            OpenApiParameter('lat', OpenApiTypes.FLOAT, description='Latitude', required=True),
+            OpenApiParameter('lng', OpenApiTypes.FLOAT, description='Longitude', required=True),
+            OpenApiParameter('radius', OpenApiTypes.FLOAT, description='Radius in km (default 5)', required=False),
+        ]
+    )
     def get(self, request):
         lat = request.query_params.get('lat')
         lng = request.query_params.get('lng')

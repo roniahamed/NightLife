@@ -52,20 +52,30 @@ class SearchEventSerializer(serializers.ModelSerializer):
 
 class TrendingVenueSerializer(serializers.ModelSerializer):
     heat_score = serializers.FloatField(source='calculated_heat_score', read_only=True)
+    heat_percentage = serializers.SerializerMethodField()
     followers_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Venue
-        fields = ['id', 'name', 'address', 'profile_image', 'heat_score', 'followers_count']
+        fields = ['id', 'name', 'address', 'profile_image', 'heat_score', 'heat_percentage', 'followers_count']
+
+    def get_heat_percentage(self, obj):
+        score = getattr(obj, 'calculated_heat_score', 0)
+        return min(max(float(score) / 10.0, 0.0), 100.0)
 
 class TrendingEventSerializer(serializers.ModelSerializer):
     venue_name = serializers.CharField(source='venue.name', read_only=True)
     rsvp_count = serializers.IntegerField(read_only=True)
     trending_score = serializers.FloatField(read_only=True)
+    trending_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
-        fields = ['id', 'title', 'start_time', 'cover_image', 'venue_name', 'rsvp_count', 'trending_score']
+        fields = ['id', 'title', 'start_time', 'cover_image', 'venue_name', 'rsvp_count', 'trending_score', 'trending_percentage']
+
+    def get_trending_percentage(self, obj):
+        score = getattr(obj, 'trending_score', 0)
+        return min(float(score), 100.0)
 
 class NearbyVenueSerializer(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField()

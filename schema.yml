@@ -8,6 +8,34 @@ paths:
     get:
       operationId: discovery_heatmap_stats_retrieve
       summary: Get Heatmap Statistics
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+          format: float
+        description: Latitude
+      - in: query
+        name: lng
+        schema:
+          type: number
+          format: float
+        description: Longitude
+      - in: query
+        name: radius
+        schema:
+          type: number
+          format: float
+        description: Radius in km (default 20)
+      - in: query
+        name: time_filter
+        schema:
+          type: string
+          enum:
+          - live
+          - tonight
+          - week
+        description: Time filter (default live)
       tags:
       - discovery
       security:
@@ -26,6 +54,58 @@ paths:
     get:
       operationId: discovery_heatmap_zones_retrieve
       summary: Get Heatmap Zones
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+          format: float
+        description: Latitude
+      - in: query
+        name: lng
+        schema:
+          type: number
+          format: float
+        description: Longitude
+      - in: query
+        name: max_lat
+        schema:
+          type: number
+          format: float
+        description: Maximum latitude for bounding box
+      - in: query
+        name: max_lng
+        schema:
+          type: number
+          format: float
+        description: Maximum longitude for bounding box
+      - in: query
+        name: min_lat
+        schema:
+          type: number
+          format: float
+        description: Minimum latitude for bounding box
+      - in: query
+        name: min_lng
+        schema:
+          type: number
+          format: float
+        description: Minimum longitude for bounding box
+      - in: query
+        name: radius
+        schema:
+          type: number
+          format: float
+        description: Radius in km (default 20)
+      - in: query
+        name: time_filter
+        schema:
+          type: string
+          enum:
+          - live
+          - tonight
+          - week
+        description: Time filter (default live)
       tags:
       - discovery
       security:
@@ -44,6 +124,27 @@ paths:
     get:
       operationId: discovery_nearby_retrieve
       summary: Get Nearby Venues
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+          format: float
+        description: Latitude
+        required: true
+      - in: query
+        name: lng
+        schema:
+          type: number
+          format: float
+        description: Longitude
+        required: true
+      - in: query
+        name: radius
+        schema:
+          type: number
+          format: float
+        description: Radius in km (default 5)
       tags:
       - discovery
       security:
@@ -62,6 +163,22 @@ paths:
     get:
       operationId: discovery_search_retrieve
       summary: Global Search
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search query
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - all
+          - clubs
+          - events
+          - people
+        description: Type of entity to search
       tags:
       - discovery
       security:
@@ -98,6 +215,19 @@ paths:
     get:
       operationId: discovery_trending_summary_retrieve
       summary: Get Trending Summary
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+          format: float
+        description: Latitude for location-biased summary
+      - in: query
+        name: lng
+        schema:
+          type: number
+          format: float
+        description: Longitude for location-biased summary
       tags:
       - discovery
       security:
@@ -1023,6 +1153,40 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/social/following/:
+    get:
+      operationId: social_following_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeedPostList'
+          description: ''
   /api/social/for-you/:
     get:
       operationId: social_for_you_list
@@ -1055,7 +1219,41 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPostList'
+                $ref: '#/components/schemas/PaginatedFeedPostList'
+          description: ''
+  /api/social/nearby/:
+    get:
+      operationId: social_nearby_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - social
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeedPostList'
           description: ''
   /api/social/posts/:
     get:
@@ -3718,6 +3916,68 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardAnalytics'
           description: ''
+  /api/venues/heatmap/:
+    get:
+      operationId: venues_heatmap_list
+      description: Returns venues within a radius, including their dynamic heat score
+        and zone.
+      summary: Get Heatmap Venues
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+          format: float
+        description: Latitude
+        required: true
+      - in: query
+        name: lng
+        schema:
+          type: number
+          format: float
+        description: Longitude
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: radius
+        schema:
+          type: number
+          format: float
+        description: Search radius in km (default 5.0)
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by venue name
+      tags:
+      - Heatmap
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHeatmapVenueList'
+          description: ''
   /api/venues/stripe/dashboard/:
     get:
       operationId: venues_stripe_dashboard_retrieve
@@ -4437,6 +4697,106 @@ components:
       - name
       - price
       - total_quantity
+    FeedPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        caption:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          nullable: true
+          maxItems: 10
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMedia'
+          readOnly: true
+        mentions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMention'
+          readOnly: true
+        profile_id:
+          type: string
+          format: uuid
+          readOnly: true
+        profile_pic:
+          type: string
+          format: uri
+          readOnly: true
+        venue_username:
+          type: string
+          readOnly: true
+        venue_name:
+          type: string
+          readOnly: true
+        is_following_venue:
+          type: boolean
+          readOnly: true
+        location_name:
+          type: string
+          readOnly: true
+        location_coordinates:
+          type: string
+          nullable: true
+        distance:
+          type: number
+          format: float
+          readOnly: true
+        likes_count:
+          type: integer
+          readOnly: true
+        comments_count:
+          type: integer
+          readOnly: true
+        shares_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_liked:
+          type: boolean
+          readOnly: true
+        is_saved:
+          type: boolean
+          readOnly: true
+        recent_comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comments_count
+      - created_at
+      - distance
+      - id
+      - is_following_venue
+      - is_liked
+      - is_saved
+      - likes_count
+      - location_name
+      - media
+      - mentions
+      - profile_id
+      - profile_pic
+      - recent_comments
+      - updated_at
+      - venue_name
+      - venue_username
     ForgotPassword:
       type: object
       properties:
@@ -4454,6 +4814,76 @@ components:
           minLength: 1
       required:
       - email
+    HeatmapActiveEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - start_time
+      - title
+    HeatmapVenue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        profile_image:
+          type: string
+          format: uri
+          nullable: true
+        location_coordinates:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        calculated_heat_score:
+          type: integer
+          readOnly: true
+        heat_zone:
+          type: string
+          readOnly: true
+        followers_count:
+          type: integer
+          readOnly: true
+          default: 0
+        active_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeatmapActiveEvent'
+          readOnly: true
+        is_currently_open:
+          type: boolean
+          readOnly: true
+      required:
+      - active_events
+      - calculated_heat_score
+      - followers_count
+      - heat_zone
+      - id
+      - is_currently_open
+      - location_coordinates
+      - name
     MediaType31eEnum:
       enum:
       - image
@@ -4678,7 +5108,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventTicketTier'
-    PaginatedPostList:
+    PaginatedFeedPostList:
       type: object
       required:
       - results
@@ -4693,6 +5123,52 @@ components:
           nullable: true
           format: uri
           example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedPost'
+    PaginatedHeatmapVenueList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeatmapVenue'
+    PaginatedPostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
         results:
           type: array
           items:
@@ -6399,6 +6875,9 @@ components:
         heat_score:
           type: integer
           readOnly: true
+        heat_zone:
+          type: string
+          readOnly: true
         gallery:
           type: array
           items:
@@ -6439,6 +6918,7 @@ components:
       - followers_count
       - gallery
       - heat_score
+      - heat_zone
       - id
       - is_following
       - is_stripe_connected

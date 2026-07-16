@@ -352,6 +352,9 @@ class HeatmapAPIView(generics.ListAPIView):
         ],
         tags=['Heatmap']
     )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         lat = self.request.query_params.get('lat')
         lng = self.request.query_params.get('lng')
