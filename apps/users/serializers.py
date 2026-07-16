@@ -269,3 +269,10 @@ class ProfileDetailSerializer(serializers.Serializer):
 
 class AvailableProfilesResponseSerializer(serializers.Serializer):
     profiles = ProfileDetailSerializer(many=True)
+
+class ChangeEmailSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True)
+    new_email = serializers.EmailField(required=True)
+
+class DeleteAccountSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True)

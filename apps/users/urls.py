@@ -5,7 +5,8 @@ from .views import (
     VerifyResetOTPView, ResetPasswordView, ChangePasswordView, ProfileView,
     PublicProfileView, FollowUserView, FollowersListView, FollowingListView,
     BlockUserView, ReportUserView, BlockedUsersListView, UserSettingsView,
-    CustomTokenObtainPairView, SwitchProfileView, AvailableProfilesView
+    CustomTokenObtainPairView, SwitchProfileView, AvailableProfilesView,
+    ChangeEmailView, DeleteAccountView
 )
 
 urlpatterns = [
@@ -29,6 +30,8 @@ urlpatterns = [
     # Profile & Settings
     path('profile/', ProfileView.as_view(), name='profile'),
     path('settings/', UserSettingsView.as_view(), name='user-settings'),
+    path('email/change/', ChangeEmailView.as_view(), name='change-email'),
+    path('account/delete/', DeleteAccountView.as_view(), name='delete-account'),
     path('<str:username>/profile/', PublicProfileView.as_view(), name='public-profile'),
     
     # Follow

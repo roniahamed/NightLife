@@ -23,7 +23,8 @@ from .serializers import (
     VerifyResetOTPSerializer, ResetPasswordSerializer, ChangePasswordSerializer, ProfileSerializer,
     UserPublicProfileSerializer, UserFollowerSerializer, UserFollowingSerializer, UserReportSerializer,
     UserBlockedSerializer, UserSettingsSerializer, CustomTokenObtainPairSerializer,
-    SwitchProfileRequestSerializer, AvailableProfilesResponseSerializer
+    SwitchProfileRequestSerializer, AvailableProfilesResponseSerializer,
+    ChangeEmailSerializer, DeleteAccountSerializer
 )
 from .services import UserProfileService, AuthService, SocialConnectionService
 from apps.common.pagination import StandardResultsSetPagination
@@ -421,3 +422,41 @@ class UserSettingsView(generics.RetrieveUpdateAPIView):
         from .models import UserSettings
         settings, _ = UserSettings.objects.get_or_create(user=self.request.user)
         return settings
+
+class ChangeEmailView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ChangeEmailSerializer
+
+    @extend_schema(summary="Change Email", description="Change user's email.", tags=['Authentication'])
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            if not request.user.check_password(serializer.validated_data['password']):
+                return error_response(message="Incorrect password.", status=status.HTTP_400_BAD_REQUEST)
+            
+            new_email = serializer.validated_data['new_email']
+            if User.objects.filter(email=new_email).exists():
+                return error_response(message="Email is already in use.", status=status.HTTP_400_BAD_REQUEST)
+                
+            request.user.email = new_email
+            # Setting email verified to false is standard but depends on requirements
+            # request.user.is_email_verified = False 
+            request.user.save()
+            return success_response(message="Email changed successfully.")
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteAccountView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DeleteAccountSerializer
+
+    @extend_schema(summary="Delete Account", description="Delete the authenticated user's account.", tags=['Authentication'])
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            if not request.user.check_password(serializer.validated_data['password']):
+                return error_response(message="Incorrect password.", status=status.HTTP_400_BAD_REQUEST)
+            
+            request.user.delete()
+            return success_response(message="Account deleted successfully.")
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
