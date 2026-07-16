@@ -62,12 +62,6 @@ class UserInboxConsumer(AsyncWebsocketConsumer):
                 if message_id:
                     # Mark message as read in DB using sync_to_async
                     await database_sync_to_async(mark_message_as_read)(self.user, message_id)
-                    
-                    # Optionally notify the client that it was marked successfully
-                    await self.send(text_data=json.dumps({
-                        'type': 'message_seen_ack',
-                        'message_id': message_id
-                    }))
         except Exception as e:
             # Silently ignore or log parsing errors/not found errors
             pass
