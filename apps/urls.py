@@ -10,4 +10,5 @@ urlpatterns = [
     path('discovery/', include('apps.discovery.urls')),
     path('social/', include('apps.social.urls')),
     path('tickets/', include('apps.tickets.urls')),
+    path('notifications/', include('apps.notifications.urls')),
 ]
