@@ -1,11 +1,11 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, mixins
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from apps.common.utils import success_response, error_response
-from .models import FAQ, LegalDocument, BugReport
-from .serializers import FAQSerializer, LegalDocumentSerializer, BugReportSerializer
+from .models import FAQ, TermsAndCondition, PrivacyPolicy, CommunityGuideline, BugReport
+from .serializers import FAQSerializer, TermsAndConditionSerializer, PrivacyPolicySerializer, CommunityGuidelineSerializer, BugReportSerializer
 
 class FAQListCreateView(generics.ListCreateAPIView):
     queryset = FAQ.objects.all()
@@ -24,48 +24,153 @@ class FAQListCreateView(generics.ListCreateAPIView):
         return success_response(data=serializer.data, message="FAQs retrieved successfully.")
 
     @extend_schema(summary="Create FAQ", description="Allows an admin to create a new FAQ.", tags=['Support'])
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return success_response(data=serializer.data, message="FAQ created successfully.", status=status.HTTP_201_CREATED)
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
-class LegalDocumentListCreateView(generics.ListCreateAPIView):
-    queryset = LegalDocument.objects.all()
-    serializer_class = LegalDocumentSerializer
+class TermsAndConditionListCreateView(generics.ListCreateAPIView):
+    queryset = TermsAndCondition.objects.all()
+    serializer_class = TermsAndConditionSerializer
 
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAdminUser()]
         return [AllowAny()]
 
-    @extend_schema(summary="Get All Legal Documents", description="Retrieve all legal documents.", tags=['Support'])
+    @extend_schema(summary="Get All Terms and Conditions", description="Retrieve all terms and conditions documents.", tags=['Support'])
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
-        return success_response(data=serializer.data, message="Legal documents retrieved successfully.")
+        return success_response(data=serializer.data, message="Terms and conditions retrieved successfully.")
 
-    @extend_schema(summary="Create Legal Document", description="Allows an admin to create a new legal document.", tags=['Support'])
-    def create(self, request, *args, **kwargs):
+    @extend_schema(summary="Create Terms and Conditions", description="Allows an admin to create a new terms document.", tags=['Support'])
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return success_response(data=serializer.data, message="Legal document created successfully.", status=status.HTTP_201_CREATED)
+            return success_response(data=serializer.data, message="Terms created successfully.", status=status.HTTP_201_CREATED)
         return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
-class LegalDocumentView(generics.RetrieveAPIView):
-    queryset = LegalDocument.objects.all()
-    serializer_class = LegalDocumentSerializer
-    permission_classes = (AllowAny,)
-    lookup_field = 'document_type'
+class TermsAndConditionDetailView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
+    queryset = TermsAndCondition.objects.all()
+    serializer_class = TermsAndConditionSerializer
 
-    @extend_schema(summary="Get Legal Document", description="Retrieve a legal document by its type (terms, privacy, guidelines).", tags=['Support'])
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @extend_schema(summary="Get Terms and Conditions", description="Retrieve terms and conditions by ID.", tags=['Support'])
     def get(self, request, *args, **kwargs):
-        document_type = self.kwargs.get(self.lookup_field)
-        document = get_object_or_404(LegalDocument, document_type=document_type)
+        document = self.get_object()
         serializer = self.get_serializer(document)
-        return success_response(data=serializer.data, message=f"{document_type} retrieved successfully.")
+        return success_response(data=serializer.data, message="Terms and conditions retrieved successfully.")
+
+    @extend_schema(summary="Update Terms and Conditions (Partial)", description="Partially update existing terms (Admin only).", tags=['Support'])
+    def patch(self, request, *args, **kwargs):
+        document = self.get_object()
+        serializer = self.get_serializer(document, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Terms and conditions updated successfully.")
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
+class PrivacyPolicyListCreateView(generics.ListCreateAPIView):
+    queryset = PrivacyPolicy.objects.all()
+    serializer_class = PrivacyPolicySerializer
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @extend_schema(summary="Get All Privacy Policies", description="Retrieve all privacy policies.", tags=['Support'])
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return success_response(data=serializer.data, message="Privacy policies retrieved successfully.")
+
+    @extend_schema(summary="Create Privacy Policy", description="Allows an admin to create a new privacy policy.", tags=['Support'])
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Privacy policy created successfully.", status=status.HTTP_201_CREATED)
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
+class PrivacyPolicyDetailView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
+    queryset = PrivacyPolicy.objects.all()
+    serializer_class = PrivacyPolicySerializer
+
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @extend_schema(summary="Get Privacy Policy", description="Retrieve a privacy policy by ID.", tags=['Support'])
+    def get(self, request, *args, **kwargs):
+        document = self.get_object()
+        serializer = self.get_serializer(document)
+        return success_response(data=serializer.data, message="Privacy policy retrieved successfully.")
+
+    @extend_schema(summary="Update Privacy Policy (Partial)", description="Partially update an existing privacy policy (Admin only).", tags=['Support'])
+    def patch(self, request, *args, **kwargs):
+        document = self.get_object()
+        serializer = self.get_serializer(document, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Privacy policy updated successfully.")
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
+class CommunityGuidelineListCreateView(generics.ListCreateAPIView):
+    queryset = CommunityGuideline.objects.all()
+    serializer_class = CommunityGuidelineSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @extend_schema(summary="Get All Community Guidelines", description="Retrieve all community guidelines.", tags=['Support'])
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return success_response(data=serializer.data, message="Community guidelines retrieved successfully.")
+
+    @extend_schema(summary="Create Community Guideline", description="Allows an admin to create a new community guideline.", tags=['Support'])
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Community guideline created successfully.", status=status.HTTP_201_CREATED)
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
+
+class CommunityGuidelineDetailView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
+    queryset = CommunityGuideline.objects.all()
+    serializer_class = CommunityGuidelineSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @extend_schema(summary="Get Community Guideline", description="Retrieve a community guideline by ID.", tags=['Support'])
+    def get(self, request, *args, **kwargs):
+        document = self.get_object()
+        serializer = self.get_serializer(document)
+        return success_response(data=serializer.data, message="Community guideline retrieved successfully.")
+
+    @extend_schema(summary="Update Community Guideline (Partial)", description="Partially update an existing community guideline (Admin only).", tags=['Support'])
+    def patch(self, request, *args, **kwargs):
+        document = self.get_object()
+        serializer = self.get_serializer(document, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Community guideline updated successfully.")
+        return error_response(errors=serializer.errors, message="Invalid data", status=status.HTTP_400_BAD_REQUEST)
 
 class ReportBugListCreateView(generics.ListCreateAPIView):
     queryset = BugReport.objects.all()
@@ -83,7 +188,7 @@ class ReportBugListCreateView(generics.ListCreateAPIView):
         return success_response(data=serializer.data, message="Bug reports retrieved successfully.")
 
     @extend_schema(summary="Report a Bug", description="Allows an authenticated user to submit a bug report.", tags=['Support'])
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)

@@ -1,15 +1,28 @@
 from rest_framework import serializers
-from .models import FAQ, LegalDocument, BugReport
+from .models import FAQ, TermsAndCondition, PrivacyPolicy, CommunityGuideline, BugReport
 
 class FAQSerializer(serializers.ModelSerializer):
     class Meta:
         model = FAQ
         fields = ('id', 'question', 'answer', 'order', 'updated_at')
 
-class LegalDocumentSerializer(serializers.ModelSerializer):
+class TermsAndConditionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = LegalDocument
-        fields = ('document_type', 'content', 'updated_at')
+        model = TermsAndCondition
+        fields = ('id', 'content', 'updated_at')
+        read_only_fields = ('id', 'updated_at')
+
+class PrivacyPolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivacyPolicy
+        fields = ('id', 'content', 'updated_at')
+        read_only_fields = ('id', 'updated_at')
+
+class CommunityGuidelineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityGuideline
+        fields = ('id', 'content', 'updated_at')
+        read_only_fields = ('id', 'updated_at')
 
 class BugReportSerializer(serializers.ModelSerializer):
     class Meta:

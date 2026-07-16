@@ -36,18 +36,38 @@ class FAQ(models.Model):
     def __str__(self):
         return self.question
 
-class LegalDocument(models.Model):
-    DOCUMENT_TYPES = (
-        ('terms', 'Terms of Service'),
-        ('privacy', 'Privacy Policy'),
-        ('guidelines', 'Community Guidelines'),
-    )
-    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES, unique=True)
-    content = models.TextField(help_text="Content of the document (Markdown/HTML supported)")
+class TermsAndCondition(models.Model):
+    content = models.TextField(help_text="Content of the Terms and Conditions (Markdown/HTML supported)")
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name_plural = "Terms and Conditions"
+        ordering = ['-updated_at']
+
     def __str__(self):
-        return dict(self.DOCUMENT_TYPES).get(self.document_type, self.document_type)
+        return f"Terms and Conditions (Updated: {self.updated_at.strftime('%Y-%m-%d')})"
+
+class PrivacyPolicy(models.Model):
+    content = models.TextField(help_text="Content of the Privacy Policy (Markdown/HTML supported)")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Privacy Policies"
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Privacy Policy (Updated: {self.updated_at.strftime('%Y-%m-%d')})"
+
+class CommunityGuideline(models.Model):
+    content = models.TextField(help_text="Content of the Community Guidelines (Markdown/HTML supported)")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Community Guidelines"
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Community Guidelines (Updated: {self.updated_at.strftime('%Y-%m-%d')})"
 
 class BugReport(models.Model):
     STATUS_CHOICES = (

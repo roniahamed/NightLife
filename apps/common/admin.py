@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PlatformSettings, FAQ, LegalDocument, BugReport
+from .models import PlatformSettings, FAQ, TermsAndCondition, PrivacyPolicy, CommunityGuideline, BugReport
 
 @admin.register(PlatformSettings)
 class PlatformSettingsAdmin(admin.ModelAdmin):
@@ -21,10 +21,20 @@ class FAQAdmin(admin.ModelAdmin):
     search_fields = ('question',)
     ordering = ('order', '-created_at')
 
-@admin.register(LegalDocument)
-class LegalDocumentAdmin(admin.ModelAdmin):
-    list_display = ('document_type', 'updated_at')
-    list_filter = ('document_type',)
+@admin.register(TermsAndCondition)
+class TermsAndConditionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'updated_at')
+    search_fields = ('content',)
+
+@admin.register(PrivacyPolicy)
+class PrivacyPolicyAdmin(admin.ModelAdmin):
+    list_display = ('id', 'updated_at')
+    search_fields = ('content',)
+
+@admin.register(CommunityGuideline)
+class CommunityGuidelineAdmin(admin.ModelAdmin):
+    list_display = ('id', 'updated_at')
+    search_fields = ('content',)
 
 @admin.register(BugReport)
 class BugReportAdmin(admin.ModelAdmin):
