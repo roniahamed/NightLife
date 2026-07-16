@@ -21,6 +21,7 @@ from .serializers import (
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.utils import success_response, error_response
+from apps.notifications.firebase import send_user_notification
 import stripe
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -125,7 +126,17 @@ class EventRSVPView(APIView):
              return error_response(message="'is_going' boolean field is required.", status=status.HTTP_400_BAD_REQUEST)
              
         if is_going:
-            EventRSVP.objects.get_or_create(user=request.user, event=event)
+            rsvp, created = EventRSVP.objects.get_or_create(user=request.user, event=event)
+            
+            if created and getattr(request.user, 'notify_events_rsvps', False):
+                send_user_notification(
+                    user=request.user,
+                    title="RSVP Confirmed",
+                    message=f"You are now going to {event.title}!",
+                    notification_type='event_rsvp',
+                    data={'event_id': str(event.id)}
+                )
+            
             return success_response(message="RSVP added successfully.")
         else:
             EventRSVP.objects.filter(user=request.user, event=event).delete()

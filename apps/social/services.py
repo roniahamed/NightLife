@@ -1,10 +1,13 @@
 from django.db import transaction
 from django.db.models import Count, Prefetch
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 from .models import Post, PostMedia, PostMention, Comment, Like, SavedPost, Story
-from apps.users.models import User
 from apps.venues.models import Venue
 from .utils import generate_thumbnail
+from apps.notifications.firebase import send_user_notification
+
+User = get_user_model()
 
 class SocialService:
     @staticmethod
@@ -70,12 +73,34 @@ class SocialService:
         if not created:
             like.delete()
             return False # Unliked
+        
+        # Send notification to post author if they prefer it and it's not their own like
+        if post.author and post.author != user and getattr(post.author, 'notify_likes', False):
+            send_user_notification(
+                user=post.author,
+                title="New Like",
+                message=f"{user.username} liked your post.",
+                notification_type='like',
+                data={'post_id': str(post.id)}
+            )
+            
         return True # Liked
         
     @staticmethod
     def add_comment(user, post_id, text, parent_id=None):
         post = Post.objects.get(id=post_id)
         comment = Comment.objects.create(post=post, user=user, text=text, parent_id=parent_id)
+        
+        # Send notification to post author if they prefer it and it's not their own comment
+        if post.author and post.author != user and getattr(post.author, 'notify_comments', False):
+            send_user_notification(
+                user=post.author,
+                title="New Comment",
+                message=f"{user.username} commented on your post.",
+                notification_type='comment',
+                data={'post_id': str(post.id), 'comment_id': str(comment.id)}
+            )
+            
         return comment
         
     @staticmethod

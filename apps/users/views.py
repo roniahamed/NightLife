@@ -26,6 +26,7 @@ from .serializers import (
     SwitchProfileRequestSerializer, AvailableProfilesResponseSerializer,
     ChangeEmailSerializer, DeleteAccountSerializer
 )
+from apps.notifications.firebase import send_user_notification
 from .services import UserProfileService, AuthService, SocialConnectionService
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import IsActiveProfileUser, IsActiveProfileVenue
@@ -308,6 +309,15 @@ class FollowUserView(APIView):
         if not created:
             follow.delete()
             return success_response(message="Unfollowed successfully.")
+        
+        if getattr(target_user, 'notify_new_followers', False):
+            send_user_notification(
+                user=target_user,
+                title="New Follower",
+                message=f"{request.user.username} started following you.",
+                notification_type='new_follower',
+                data={'follower_username': request.user.username}
+            )
         
         return success_response(message="Followed successfully.")
 

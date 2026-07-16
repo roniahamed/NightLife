@@ -26,8 +26,14 @@ class FCMDevice(models.Model):
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
         ('system', 'System'),
-        ('event_invite', 'Event Invite'),
+        ('event_rsvp', 'Event RSVP'),
         ('ticket_purchase', 'Ticket Purchase'),
+        ('like', 'Like'),
+        ('comment', 'Comment'),
+        ('new_follower', 'New Follower'),
+        ('message', 'Message'),
+        ('promotion', 'Promotion'),
+        ('heatmap_alert', 'Heat Map Alert'),
         ('general', 'General'),
     )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')

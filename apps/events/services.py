@@ -6,6 +6,7 @@ import stripe
 from django.conf import settings
 from .models import EventTicketTier, TicketPurchase, StripeWebhookEvent
 from apps.venues.models import Venue
+from apps.notifications.firebase import send_user_notification
 
 class TicketPurchaseError(Exception):
     pass
@@ -137,6 +138,15 @@ def handle_stripe_webhook_event(payload, sig_header):
                 tier = purchase.ticket_tier
                 tier.sold_quantity += purchase.quantity
                 tier.save()
+                
+                # Send push notification to user
+                send_user_notification(
+                    user=purchase.user,
+                    title="Ticket Confirmed!",
+                    message=f"Your purchase of {purchase.quantity} ticket(s) for {tier.event.title} was successful.",
+                    notification_type='ticket_purchase',
+                    data={'purchase_id': str(purchase.id), 'event_id': str(tier.event.id)}
+                )
             except TicketPurchase.DoesNotExist:
                 pass
                 

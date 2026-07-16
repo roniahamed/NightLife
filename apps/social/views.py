@@ -9,6 +9,7 @@ from .services import SocialService
 from apps.common.pagination import StandardResultsSetPagination, CursorSetPagination
 from apps.common.permissions import IsOwnerOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
+from apps.notifications.firebase import send_user_notification
 
 @extend_schema_view(
     list=extend_schema(tags=['Social Posts']),
@@ -111,7 +112,17 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_pk')
-        serializer.save(user=self.request.user, post_id=post_id)
+        comment = serializer.save(user=self.request.user, post_id=post_id)
+        
+        post = comment.post
+        if post.author and post.author != self.request.user and getattr(post.author, 'notify_comments', False):
+            send_user_notification(
+                user=post.author,
+                title="New Comment",
+                message=f"{self.request.user.username} commented on your post.",
+                notification_type='comment',
+                data={'post_id': str(post.id), 'comment_id': str(comment.id)}
+            )
 
 @extend_schema_view(
     list=extend_schema(
