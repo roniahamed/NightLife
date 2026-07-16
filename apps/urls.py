@@ -11,4 +11,5 @@ urlpatterns = [
     path('social/', include('apps.social.urls')),
     path('tickets/', include('apps.tickets.urls')),
     path('notifications/', include('apps.notifications.urls')),
+    path('messages/', include('apps.messages.urls')),
 ]
