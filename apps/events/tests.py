@@ -354,4 +354,48 @@ class TicketTests(APITestCase):
         
         # Try to buy the ticket again (should succeed because previous reservation expired)
         response = self.client.post(url, {'ticket_tier_id': tier.id, 'quantity': 1}, format='json')
-        print(response.data); print(response.data); self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_ticket_scan(self):
+        tier = EventTicketTier.objects.create(
+            event=self.event,
+            name='General',
+            price='50.00',
+            total_quantity=100
+        )
+        purchase = TicketPurchase.objects.create(
+            user=self.regular_user,
+            event=self.event,
+            ticket_tier=tier,
+            quantity=1,
+            status='completed',
+            total_amount='50.00',
+            platform_fee='2.50'
+        )
+
+        url = reverse('ticket-scan', kwargs={'pk': purchase.id})
+        
+        # Test scanning by regular user (should fail)
+        self.client.force_authenticate(user=self.regular_user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Test scanning by venue owner with active_profile='user' (should fail)
+        class MockAuthUser:
+            payload = {'active_profile': 'user'}
+        self.client.force_authenticate(user=self.venue_user, token=MockAuthUser())
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Test scanning by venue owner with active_profile='venue' (should succeed)
+        class MockAuthVenue:
+            payload = {'active_profile': 'venue'}
+        self.client.force_authenticate(user=self.venue_user, token=MockAuthVenue())
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['data']['is_scanned'])
+
+        # Test scanning already scanned ticket (should fail)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already been scanned", response.data['message'])

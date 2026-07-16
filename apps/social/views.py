@@ -250,7 +250,6 @@ class ReportPostView(APIView):
     )
     def post(self, request, pk):
         from rest_framework import status
-        from apps.common.responses import success_response, error_response
         from .models import Post
 
         try:
@@ -258,12 +257,12 @@ class ReportPostView(APIView):
             serializer = PostReportSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(reporter=request.user, post=post)
-                return success_response(message="Post reported successfully.", data=serializer.data, status=status.HTTP_201_CREATED)
-            return error_response(message="Invalid data.", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status': 'success', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'status': 'error', 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Post.DoesNotExist:
-            return error_response(message="Post not found.", status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'error', 'message': "Post not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ReportCommentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -277,7 +276,6 @@ class ReportCommentView(APIView):
     )
     def post(self, request, pk):
         from rest_framework import status
-        from apps.common.responses import success_response, error_response
         from .models import Comment
 
         try:
@@ -285,10 +283,10 @@ class ReportCommentView(APIView):
             serializer = CommentReportSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(reporter=request.user, comment=comment)
-                return success_response(message="Comment reported successfully.", data=serializer.data, status=status.HTTP_201_CREATED)
-            return error_response(message="Invalid data.", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status': 'success', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'status': 'error', 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Comment.DoesNotExist:
-            return error_response(message="Comment not found.", status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'error', 'message': "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return error_response(message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

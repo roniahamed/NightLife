@@ -248,3 +248,36 @@ class SocialTests(TestCase):
         response = self.client.delete(f'/api/social/stories/{story.id}/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Story.objects.count(), 1)
+
+    def test_report_post(self):
+        post = Post.objects.create(author=self.venue_user, caption='Inappropriate post')
+        response = self.client.post(f'/api/social/posts/{post.id}/report/', {
+            'reason': 'spam',
+            'description': 'This is spam'
+        })
+        print(response.content)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['reason'], 'spam')
+        
+        from .models import PostReport
+        self.assertEqual(PostReport.objects.count(), 1)
+        report = PostReport.objects.first()
+        self.assertEqual(report.reporter, self.user)
+        self.assertEqual(report.post, post)
+
+    def test_report_comment(self):
+        post = Post.objects.create(author=self.venue_user, caption='Nice post')
+        comment = Comment.objects.create(user=self.venue_user, post=post, text='Inappropriate comment')
+        
+        response = self.client.post(f'/api/social/comments/{comment.id}/report/', {
+            'reason': 'harassment',
+            'description': 'This is harassment'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['reason'], 'harassment')
+        
+        from .models import CommentReport
+        self.assertEqual(CommentReport.objects.count(), 1)
+        report = CommentReport.objects.first()
+        self.assertEqual(report.reporter, self.user)
+        self.assertEqual(report.comment, comment)
